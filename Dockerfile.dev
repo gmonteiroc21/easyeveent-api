@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1
+ARG RUBY_VERSION=4.0.1
+FROM ruby:${RUBY_VERSION}-slim
+
+WORKDIR /rails
+
+# deps para gems nativas + pg + node (seguro mesmo em API)
+RUN apt-get update -qq && apt-get install --no-install-recommends -y \
+  build-essential \
+  git \
+  libpq-dev \
+  postgresql-client \
+  nodejs \
+  pkg-config \
+  libyaml-dev \
+  && rm -rf /var/lib/apt/lists/*
+  
+# Bundler
+ENV BUNDLE_PATH="/usr/local/bundle"
+
+# Instala gems (cacheável)
+COPY Gemfile Gemfile.lock ./
+RUN bundle install
+
+# Copia app (em dev você também vai montar volume, mas isso deixa a imagem utilizável)
+COPY . .
+
+EXPOSE 3000
+
+CMD ["bash", "-lc", "rm -f tmp/pids/server.pid && bin/rails server -b 0.0.0.0 -p 3000"]
