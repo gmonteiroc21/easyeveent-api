@@ -27,6 +27,13 @@ h1,h2 { margin: 0 0 12px; }
 
 label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 input { padding: 10px 12px; border-radius: 10px; border: 1px solid #1c2433; background: #0b0f19; color: #e6eaf2; }
+select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #1c2433;
+  background: #0b0f19;
+  color: #e6eaf2;
+}
 .error { color: #ff9090; font-size: 12px; }
 .alert { background: #2a1620; border: 1px solid #5a1f2f; padding: 10px 12px; border-radius: 10px; }
 
