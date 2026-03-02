@@ -1,13 +1,13 @@
 class EventsController < ApplicationController
   def index
-    events = policy_scope(Event).order(starts_at: :desc)
-    render json: events
+    events = policy_scope(Event).includes(:user_events).order(starts_at: :desc)
+    render json: events.map { |event| serialize_event(event) }
   end
 
   def show
-    event = Event.find(params[:id])
+    event = Event.includes(:user_events).find(params[:id])
     authorize event
-    render json: event
+    render json: serialize_event(event)
   end
 
   def create
@@ -43,6 +43,14 @@ class EventsController < ApplicationController
   end
 
   private
+
+  def serialize_event(event)
+    event.as_json.merge("owned_by_me" => owned_by_current_user?(event))
+  end
+
+  def owned_by_current_user?(event)
+    event.user_events.any? { |membership| membership.user_id == current_user.id && membership.owner? }
+  end
 
   def event_params
     params.require(:event).permit(:title, :starts_at, :location, :price, :banner, :status)

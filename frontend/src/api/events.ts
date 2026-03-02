@@ -12,6 +12,7 @@ export type EventEntity = {
   price?: number | null;
   banner?: string | null;
   status?: EventStatus | null;
+  owned_by_me?: boolean;
 };
 
 export type EventInput = {

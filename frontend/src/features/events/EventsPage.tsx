@@ -173,13 +173,15 @@ export function EventsPage() {
         </div>
       )}
 
-      <div className="toolbar">
+      <div className="dashboardSearch">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar por título/local..."
+          placeholder="Pesquisar por título..."
         />
+      </div>
 
+      <div className="toolbar eventsToolbar">
         <select value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">Status (todos)</option>
           {statusOptions.map((s) => (
@@ -242,7 +244,13 @@ export function EventsPage() {
                   <td>{e.status ?? "-"}</td>
                   <td>{e.price ?? "-"}</td>
                   <td className="actions">
-                    <Link className="btn" to={`/eventos/${e.id}/checkin`}>Check-in</Link>
+                    {e.owned_by_me ? (
+                      <button className="btn" type="button" disabled>
+                        Check-in indisponível
+                      </button>
+                    ) : (
+                      <Link className="btn" to={`/eventos/${e.id}/checkin`}>Check-in</Link>
+                    )}
                     <button className="btn" onClick={() => openEdit(e)}>Editar</button>
                     <button className="btn danger" onClick={() => confirmDelete(e.id)}>
                       {deleteMut.isPending ? "Removendo..." : "Remover"}
