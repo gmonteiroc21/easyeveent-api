@@ -1,10 +1,8 @@
-import React from "react";
+import { DashboardView } from "./view/DashboardView";
+import { useDashboardViewModel } from "./viewmodel/useDashboardViewModel";
 
 export function DashboardPage() {
-  return (
-    <section>
-      <h2>Dashboard</h2>
-      <p>Resumo (total eventos/participantes + próximos eventos) entra na próxima etapa.</p>
-    </section>
-  );
+  const state = useDashboardViewModel();
+
+  return <DashboardView state={state} />;
 }

@@ -6,8 +6,7 @@ export type EventStatus = string;
 
 export type EventEntity = {
   id: number;
-  name?: string;
-  title?: string;
+  title: string;
   starts_at: string;
   location?: string | null;
   price?: number | null;
@@ -16,11 +15,10 @@ export type EventEntity = {
 };
 
 export type EventInput = {
-  name?: string;
-  title?: string;
+  title: string;
   starts_at: string;
   location?: string | null;
-  price: "";
+  price: number | null;
   banner?: string | null;
   status?: EventStatus | null;
 };
@@ -33,7 +31,7 @@ function isRecord(v: unknown): v is RecordUnknown {
 
 function isEventEntity(v: unknown): v is EventEntity {
   if (!isRecord(v)) return false;
-  return typeof v.id === "number" && typeof v.starts_at === "string";
+  return typeof v.id === "number" && typeof v.title === "string" && typeof v.starts_at === "string";
 }
 
 function extractEvent(payload: unknown): EventEntity {

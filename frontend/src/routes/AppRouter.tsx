@@ -1,4 +1,3 @@
-import React from "react";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { AppShell } from "../layout/AppShell";
