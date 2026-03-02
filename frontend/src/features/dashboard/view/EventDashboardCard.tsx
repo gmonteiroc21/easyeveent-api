@@ -20,19 +20,38 @@ function formatPrice(price: number | null | undefined) {
   }).format(price);
 }
 
+function toSvgDataUrl(svg: string) {
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function buildPlaceholderBanner(title: string) {
+  const safeTitle = title.replace(/[<>&"']/g, "");
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#1d2d59" />
+          <stop offset="50%" stop-color="#2a5cff" />
+          <stop offset="100%" stop-color="#57d6c1" />
+        </linearGradient>
+      </defs>
+      <rect width="1200" height="600" fill="url(#bg)" />
+      <text x="60" y="520" fill="#f7faff" font-size="52" font-family="Arial, sans-serif" font-weight="700">
+        ${safeTitle}
+      </text>
+    </svg>
+  `;
+
+  return toSvgDataUrl(svg);
+}
+
 export function EventDashboardCard({ event }: EventDashboardCardProps) {
-  const hasBanner = Boolean(event.banner);
+  const bannerSrc = event.banner?.trim() || buildPlaceholderBanner(event.title);
 
   return (
     <article className="eventCard">
       <div className="eventCardMedia">
-        {hasBanner ? (
-          <img src={event.banner ?? ""} alt={`Banner do evento ${event.title}`} loading="lazy" />
-        ) : (
-          <div className="eventCardBannerFallback" aria-hidden>
-            <span>{event.title}</span>
-          </div>
-        )}
+        <img src={bannerSrc} alt={`Banner do evento ${event.title}`} loading="lazy" />
       </div>
 
       <div className="eventCardBody">
@@ -57,11 +76,11 @@ export function EventDashboardCard({ event }: EventDashboardCardProps) {
         </dl>
 
         <div className="eventCardActions">
-          <Link className="btn" to="/eventos">
-            Ver eventos
+          <Link className="btn" to={`/eventos?eventId=${event.id}&intent=buy`}>
+            Comprar ingresso
           </Link>
-          <Link className="btn primary" to={`/eventos/${event.id}/checkin`}>
-            Regras de check-in
+          <Link className="btn primary" to={`/eventos?eventId=${event.id}`}>
+            Detalhes do evento
           </Link>
         </div>
       </div>
