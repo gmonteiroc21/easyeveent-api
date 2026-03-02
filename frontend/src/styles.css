@@ -20,6 +20,29 @@ h1,h2 { margin: 0 0 12px; }
   padding-left: -5px;
 }
 .nav { display: flex; flex-direction: column; gap: 8px; }
+.navItem {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: #c7d3ec;
+}
+
+.navItem:hover {
+  background: #121a2c;
+}
+
+.navItem.active {
+  background: rgba(255, 156, 42, 0.18);
+  border: 1px solid #ff7f2a;
+  color: #ffffff;
+}
+
+.sidebarLogout {
+  margin-top: auto;
+}
+
 .content { padding: 24px; }
 
 .center { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
@@ -27,6 +50,7 @@ h1,h2 { margin: 0 0 12px; }
 
 label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 input { padding: 10px 12px; border-radius: 10px; border: 1px solid #1c2433; background: #0b0f19; color: #e6eaf2; }
+textarea { padding: 10px 12px; border-radius: 10px; border: 1px solid #1c2433; background: #0b0f19; color: #e6eaf2; resize: vertical; }
 select {
   padding: 10px 12px;
   border-radius: 10px;
