@@ -22,6 +22,15 @@ export function DashboardView({ state }: DashboardViewProps) {
         </div>
       </header>
 
+      <div className="dashboardSearch">
+        <input
+          value={state.query}
+          onChange={(event) => state.setQuery(event.target.value)}
+          placeholder="Pesquisar por título..."
+          aria-label="Pesquisar eventos no dashboard"
+        />
+      </div>
+
       {state.isLoading && <DashboardSkeleton />}
 
       {state.isError && (

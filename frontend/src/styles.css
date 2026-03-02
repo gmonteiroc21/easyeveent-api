@@ -77,6 +77,11 @@ input { padding: 10px 12px; border-radius: 10px; border: 1px solid #1c2433; back
   line-height: 1;
 }
 
+.dashboardSearch {
+  margin: 8px 0 16px;
+  max-width: 420px;
+}
+
 .dashboardGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));

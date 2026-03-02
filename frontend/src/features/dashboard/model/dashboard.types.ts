@@ -6,6 +6,8 @@ export type DashboardViewState = {
   allEvents: DashboardEvent[];
   visibleEvents: DashboardEvent[];
   totalEvents: number;
+  query: string;
+  setQuery: (value: string) => void;
   isLoading: boolean;
   isError: boolean;
   errorMessage: string | null;

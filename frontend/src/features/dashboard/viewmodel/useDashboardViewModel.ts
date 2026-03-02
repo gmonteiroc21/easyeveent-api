@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { ApiError } from "../../../api/errors";
@@ -22,6 +22,8 @@ function toErrorMessage(error: unknown): string {
 }
 
 export function useDashboardViewModel(): DashboardViewState {
+  const [query, setQuery] = useState("");
+
   const eventsQuery = useQuery({
     queryKey: ["events", "dashboard"],
     queryFn: () => eventsApi.list(),
@@ -31,10 +33,22 @@ export function useDashboardViewModel(): DashboardViewState {
     return sortByStartsAtAsc(eventsQuery.data ?? []);
   }, [eventsQuery.data]);
 
+  const visibleEvents = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return allEvents;
+
+    return allEvents.filter((event) => {
+      const title = event.title.toLowerCase();
+      return title.includes(needle);
+    });
+  }, [allEvents, query]);
+
   return {
     allEvents,
-    visibleEvents: allEvents,
+    visibleEvents,
     totalEvents: allEvents.length,
+    query,
+    setQuery,
     isLoading: eventsQuery.isLoading,
     isError: eventsQuery.isError,
     errorMessage: eventsQuery.error ? toErrorMessage(eventsQuery.error) : null,
