@@ -16,6 +16,7 @@ class Event < ApplicationRecord
   enum :status, { draft: 0, published: 1, cancelled: 2, finished: 3 }
 
   # Validações
+  validates :title, presence: true
   validates :starts_at, presence: true
   validates :location, presence: true
   validates :price, numericality: { greater_than_or_equal_to: 0 }

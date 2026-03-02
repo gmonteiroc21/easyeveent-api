@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
@@ -12,11 +12,10 @@ import type { EventEntity, EventInput } from "../../api/events.ts";
 type Flash = { type: "success" | "error"; message: string } | null;
 
 
-const statusOptions = ["draft", "published", "cancelled", "active", "inactive"] as const;
+const statusOptions = ["draft", "published", "cancelled", "finished"] as const;
 
 const formSchema = z.object({
-  name: z.string().trim().optional(),
-  title: z.string().trim().optional(),
+  title: z.string().trim().min(1, "Informe o título do evento"),
   starts_at: z.string().min(1, "Informe a data/hora de início"),
   location: z.string().trim().optional(),
   price: z.union([z.string().trim(), z.number()]).optional(), // ✅ sem transform
@@ -44,7 +43,7 @@ function fromDateTimeLocal(local: string) {
 }
 
 function displayName(e: EventEntity) {
-  return e.name ?? e.title ?? `Evento #${e.id}`;
+  return e.title;
 }
 
 export function EventsPage() {
@@ -120,13 +119,13 @@ export function EventsPage() {
     const to = dateTo ? new Date(`${dateTo}T23:59:59`).getTime() : null;
 
     return data.filter((e) => {
-      const name = displayName(e).toLowerCase();
+      const title = displayName(e).toLowerCase();
       const loc = (e.location ?? "").toLowerCase();
       const st = (e.status ?? "").toLowerCase();
 
       const t = new Date(e.starts_at).getTime();
 
-      if (needle && !(name.includes(needle) || loc.includes(needle))) return false;
+      if (needle && !(title.includes(needle) || loc.includes(needle))) return false;
       if (status && st !== status.toLowerCase()) return false;
       if (locNeedle && !loc.includes(locNeedle)) return false;
       if (from !== null && t < from) return false;
@@ -178,7 +177,7 @@ export function EventsPage() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar por nome/local..."
+          placeholder="Buscar por título/local..."
         />
 
         <select value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -226,7 +225,7 @@ export function EventsPage() {
           <table className="table">
             <thead>
               <tr>
-                <th>Nome</th>
+                <th>Título</th>
                 <th>Início</th>
                 <th>Local</th>
                 <th>Status</th>
@@ -292,8 +291,7 @@ function EventModal({
   resolver: zodResolver(formSchema),
   defaultValues: editing
     ? {
-        name: editing.name ?? "",
-        title: editing.title ?? "",
+        title: editing.title,
         starts_at: toDateTimeLocal(editing.starts_at),
         location: editing.location ?? "",
         price: editing.price != null ? String(editing.price) : "",
@@ -301,7 +299,6 @@ function EventModal({
         status: editing.status ?? "",
       }
     : {
-        name: "",
         title: "",
         starts_at: "",
         location: "",
@@ -312,10 +309,9 @@ function EventModal({
 });
 
 function submit(data: FormData) {
-  const name = (data.name ?? "").trim();
   const title = (data.title ?? "").trim();
-  if (!name && !title) {
-    setError("name", { type: "manual", message: "Informe nome ou título" });
+  if (!title) {
+    setError("title", { type: "manual", message: "Informe o título do evento" });
     return;
   }
 
@@ -334,8 +330,7 @@ function submit(data: FormData) {
   }
 
   const input: EventInput = {
-    name: name || undefined,
-    title: title || undefined,
+    title,
     starts_at: fromDateTimeLocal(data.starts_at),
     location: data.location?.trim() ? data.location.trim() : null,
     price,
@@ -354,19 +349,11 @@ function submit(data: FormData) {
         </header>
 
         <form className="form" onSubmit={handleSubmit(submit)}>
-          <div className="grid2">
-            <label>
-              Nome
-              <input {...register("name")} placeholder="Ex: Workshop de IA" />
-              {errors.name && <span className="error">{errors.name.message}</span>}
-            </label>
-
-            <label>
-              Título (se sua API usar title)
-              <input {...register("title")} placeholder="Opcional" />
-              {errors.title && <span className="error">{errors.title.message}</span>}
-            </label>
-          </div>
+          <label>
+            Título
+            <input {...register("title")} placeholder="Ex: Workshop de IA" />
+            {errors.title && <span className="error">{errors.title.message}</span>}
+          </label>
 
           <label>
             Início (data/hora)
