@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import { useAuth } from "../auth/AuthContext";
+import { useAuth } from "../auth/useAuth";
 
 export function AppShell() {
   const { logout } = useAuth();

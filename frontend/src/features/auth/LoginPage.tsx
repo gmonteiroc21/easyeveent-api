@@ -4,7 +4,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../../api/errors";
-import { useAuth } from "../../auth/AuthContext";
+import { useAuth } from "../../auth/useAuth";
 
 const schema = z.object({
   email: z.string().email("Informe um e-mail válido"),
