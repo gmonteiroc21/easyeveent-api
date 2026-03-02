@@ -12,8 +12,8 @@ export function DashboardView({ state }: DashboardViewProps) {
     <section>
       <header className="pageHeader">
         <div>
-          <h2>Dashboard</h2>
-          <p className="muted">Visão geral dos seus eventos</p>
+          <h2>EasyEvent</h2>
+          <p className="muted">Planeje, publique e acompanhe eventos com simplicidade.</p>
         </div>
 
         <div className="dashboardSummary">
