@@ -46,7 +46,14 @@ select {
 
 .toolbar { display: grid; grid-template-columns: 1fr 200px 240px 1fr; gap: 10px; margin: 12px 0 16px; }
 .toolbar input, .toolbar select { width: 100%; }
-.eventsToolbar { grid-template-columns: 200px 240px 1fr; }
+.eventsToolbar {
+  grid-template-columns: 200px 240px 280px;
+  gap: 10px;
+}
+.eventsToolbar .dateRangePicker {
+  width: 100%;
+  justify-self: stretch;
+}
 
 .dateFilters { display: flex; gap: 10px; justify-content: flex-end; }
 .dateFilters label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; opacity: .9; }
@@ -101,6 +108,86 @@ select {
 .dashboardSearch {
   margin: 8px 0 16px;
   max-width: 420px;
+}
+
+.eventsToolbar .location {
+  width: 200px;
+  justify-self: start;
+}
+
+.dateRangePicker {
+  position: relative;
+}
+
+.dateRangePopover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 320px;
+  background: #0f1524;
+  border: 1px solid #1c2433;
+  border-radius: 12px;
+  padding: 10px;
+  z-index: 1300;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35);
+}
+
+.dateRangeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  text-transform: capitalize;
+}
+
+.dateRangeWeekRow,
+.dateRangeGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.dateRangeWeekRow {
+  margin-bottom: 6px;
+}
+
+.dateRangeWeekRow span {
+  text-align: center;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.dateCell {
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #e6eaf2;
+  cursor: pointer;
+}
+
+.dateCell:hover {
+  border-color: #2a5cff;
+}
+
+.dateCell.inRange {
+  background: rgba(42, 92, 255, 0.28);
+}
+
+.dateCell.edge {
+  background: #2a5cff;
+  border-color: #2a5cff;
+}
+
+.dateCell.empty {
+  visibility: hidden;
+}
+
+.dateRangeFooter {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .dashboardGrid {
@@ -242,10 +329,21 @@ select {
     grid-template-columns: 1fr 1fr;
   }
 
+  .eventsToolbar .dateRangePicker {
+    width: 100%;
+    justify-self: stretch;
+    grid-column: span 2;
+  }
+
   .dateFilters {
     grid-column: span 2;
     justify-content: flex-start;
     flex-wrap: wrap;
+  }
+
+  .dateRangePopover {
+    right: auto;
+    left: 0;
   }
 }
 
