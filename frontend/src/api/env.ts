@@ -5,5 +5,6 @@ export const env = {
 
 
   eventsPath: import.meta.env.VITE_EVENTS_PATH ?? "/events",
+  dashboardEventsPath: import.meta.env.VITE_DASHBOARD_EVENTS_PATH ?? "/dashboard/events",
   railsWrapParams: (import.meta.env.VITE_RAILS_WRAP_PARAMS ?? "true") === "true",
 };

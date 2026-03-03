@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { ApiError } from "../../../api/errors";
-import { eventsApi } from "../../../api/events";
+import { dashboardApi } from "../../../api/dashboardApi";
 import type { DashboardEvent, DashboardViewState } from "../model/dashboard.types";
 
 function sortByStartsAtAsc(events: DashboardEvent[]) {
@@ -25,8 +25,8 @@ export function useDashboardViewModel(): DashboardViewState {
   const [query, setQuery] = useState("");
 
   const eventsQuery = useQuery({
-    queryKey: ["events", "dashboard"],
-    queryFn: () => eventsApi.list(),
+    queryKey: ["dashboard", "events", "showcase"],
+    queryFn: () => dashboardApi.listShowcase(),
   });
 
   const allEvents = useMemo(() => {

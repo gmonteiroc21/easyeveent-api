@@ -76,7 +76,7 @@ export function EventDashboardCard({ event }: EventDashboardCardProps) {
         </dl>
 
         <div className="eventCardActions">
-          <Link className="btn" to={`/eventos?eventId=${event.id}&intent=buy`}>
+          <Link className="btn" to={`/eventos/${event.id}/compra?mode=form`}>
             Comprar ingresso
           </Link>
           <Link className="btn primary" to={`/eventos/${event.id}`}>

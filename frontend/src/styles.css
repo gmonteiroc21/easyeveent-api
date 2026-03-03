@@ -89,7 +89,21 @@ select {
 .table th { font-size: 12px; opacity: .8; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-.flash { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; margin: 10px 0; border: 1px solid #1c2433; position: relative; z-index: 1200; }
+.flash {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #1c2433;
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 1400;
+  min-width: 280px;
+  max-width: min(420px, calc(100vw - 32px));
+}
 .flash.success { background: #102318; border-color: #1c4a2d; }
 .flash.error { background: #2a1620; border-color: #5a1f2f; }
 
@@ -123,12 +137,19 @@ select {
   display: block;
 }
 
-.eventDetailsClose {
+.eventDetailsTopActions {
   position: absolute;
   top: 12px;
   right: 12px;
-  width: 40px;
-  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 3;
+}
+
+.eventDetailsClose {
+  width: 36px;
+  height: 36px;
   border: 1px solid #1c2433;
   border-radius: 999px;
   display: grid;
@@ -137,7 +158,10 @@ select {
   background: #121a2c;
   color: #e6eaf2;
   cursor: pointer;
-  z-index: 2;
+}
+
+.eventSettingsContainer {
+  position: relative;
 }
 
 .eventDetailsContent {
@@ -161,6 +185,33 @@ select {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.eventSettingsTrigger {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid #1c2433;
+  background: #121a2c;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.eventSettingsMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 140px;
+  background: #0f1524;
+  border: 1px solid #1c2433;
+  border-radius: 10px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 3;
 }
 
 .eventDetailsActions {
@@ -335,6 +386,68 @@ select {
 .checkinInfoList dd {
   margin: 0;
   font-weight: 600;
+}
+
+.checkinRulesCard {
+  margin-top: 12px;
+  border: 1px solid #1c2433;
+  border-radius: 12px;
+  background: #0f1524;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.checkinRulesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.checkinRulesList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.checkinRuleItem {
+  border: 1px solid #1c2433;
+  border-radius: 10px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 54px 1fr 1fr 1fr auto auto auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.checkinRuleOrder {
+  opacity: 0.7;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.checkboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.checkboxLabel input {
+  width: 16px;
+  height: 16px;
+}
+
+.checkinRuleActions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.checkinRulesErrors {
+  margin: 8px 0 0;
+  padding-left: 18px;
 }
 
 .dashboardGrid {
@@ -524,8 +637,22 @@ select {
     justify-content: flex-start;
   }
 
+  .eventSettingsMenu {
+    right: auto;
+    left: 0;
+  }
+
   .checkinInfoList div {
     grid-template-columns: 1fr;
+  }
+
+  .checkinRuleItem {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .checkinRuleActions {
+    flex-wrap: wrap;
   }
 
   .dashboardGrid {
