@@ -35,7 +35,7 @@ h1,h2 { margin: 0 0 12px; }
 
 .navItem.active {
   background: rgba(255, 156, 42, 0.18);
-  border: 1px solid #ff7f2a;
+  border: 1px solid #b84d06;
   color: #ffffff;
 }
 
@@ -62,7 +62,7 @@ select {
 .alert { background: #2a1620; border: 1px solid #5a1f2f; padding: 10px 12px; border-radius: 10px; }
 
 .btn { padding: 10px 12px; border-radius: 10px; border: 1px solid #1c2433; background: #121a2c; color: #e6eaf2; cursor: pointer; }
-.btn.primary { background: #2a5cff; border-color: #2a5cff; }
+.btn.primary { background: rgba(255, 156, 42, 0.18); border-color: #b84d06; }
 .btn:disabled { opacity: .6; cursor: not-allowed; }
 
 .pageHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
@@ -101,6 +101,98 @@ select {
 .modal { width: min(820px, 100%); background: #0f1524; border: 1px solid #1c2433; border-radius: 12px; padding: 14px; }
 .modalHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .modalFooter { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+
+.eventDetailsModal {
+  width: min(980px, 100%);
+  background: #0f1524;
+  border: 1px solid #1c2433;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.eventDetailsBannerWrap {
+  position: relative;
+  height: 240px;
+  border-bottom: 1px solid #1c2433;
+}
+
+.eventDetailsBanner {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.eventDetailsClose {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #1c2433;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: #121a2c;
+  color: #e6eaf2;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.eventDetailsContent {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 16px;
+  padding: 16px;
+}
+
+.eventDetailsMain h3 {
+  margin: 0 0 10px;
+}
+
+.eventDetailsMain p {
+  margin: 0;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+.eventDetailsSide {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.eventDetailsActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.eventPurchaseSection {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.eventPurchaseSection h3 {
+  margin: 0;
+}
+
+.eventPurchaseForm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.eventPurchaseForm label {
+  width: 100%;
+}
+
+.eventPurchaseForm .eventDetailsActions {
+  grid-column: 1 / -1;
+}
 
 .form { display: flex; flex-direction: column; gap: 10px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -191,7 +283,7 @@ select {
 }
 
 .dateCell:hover {
-  border-color: #2a5cff;
+  border-color: #b84d06;
 }
 
 .dateCell.inRange {
@@ -199,8 +291,8 @@ select {
 }
 
 .dateCell.edge {
-  background: #2a5cff;
-  border-color: #2a5cff;
+  background: #b84d06;
+  border-color: #b84d06;
 }
 
 .dateCell.empty {
@@ -212,6 +304,37 @@ select {
   justify-content: space-between;
   gap: 8px;
   margin-top: 10px;
+}
+
+.checkinInfoCard {
+  margin-top: 12px;
+  border: 1px solid #1c2433;
+  border-radius: 12px;
+  background: #0f1524;
+  padding: 16px;
+  max-width: 720px;
+}
+
+.checkinInfoList {
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.checkinInfoList div {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 10px;
+}
+
+.checkinInfoList dt {
+  margin: 0;
+  opacity: 0.75;
+}
+
+.checkinInfoList dd {
+  margin: 0;
+  font-weight: 600;
 }
 
 .dashboardGrid {
@@ -248,7 +371,7 @@ select {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: linear-gradient(140deg, #1d2d59 0%, #2a5cff 50%, #57d6c1 100%);
+  background: linear-gradient(140deg, #1d2d59 0%, #b84d06 50%, #57d6c1 100%);
   color: #f7faff;
   text-align: center;
 }
@@ -383,6 +506,26 @@ select {
 
   .content {
     padding: 16px;
+  }
+
+  .eventDetailsBannerWrap {
+    height: 180px;
+  }
+
+  .eventDetailsContent {
+    grid-template-columns: 1fr;
+  }
+
+  .eventPurchaseForm {
+    grid-template-columns: 1fr;
+  }
+
+  .eventDetailsActions {
+    justify-content: flex-start;
+  }
+
+  .checkinInfoList div {
+    grid-template-columns: 1fr;
   }
 
   .dashboardGrid {
