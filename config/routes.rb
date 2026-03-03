@@ -9,6 +9,8 @@ Rails.application.routes.draw do
       post :transfer, on: :member
     end
 
-    resources :checkin_rules, only: [:index, :show, :create, :update, :destroy]
+    resources :checkin_rules, only: [:index, :show, :create, :update, :destroy] do
+      put :sync, on: :collection
+    end
   end
 end
