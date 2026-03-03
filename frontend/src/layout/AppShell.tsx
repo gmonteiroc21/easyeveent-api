@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import systemLogo from "../assets/system_logo.png";
 
@@ -19,11 +19,26 @@ export function AppShell() {
           {/* <span>EasyEvent</span> */}
         </div>
         <nav className="nav">
-          <Link to="/dashboard">Dashboard</Link>
-          <Link to="/eventos">Eventos</Link>
-          <Link to="/participantes">Participantes</Link>
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
+          >
+            Dashboard
+          </NavLink>
+          <NavLink
+            to="/eventos"
+            className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
+          >
+            Eventos
+          </NavLink>
+          <NavLink
+            to="/participantes"
+            className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
+          >
+            Participantes
+          </NavLink>
         </nav>
-        <button className="btn" onClick={handleLogout}>Sair</button>
+        <button className="btn sidebarLogout" onClick={handleLogout}>Sair</button>
       </aside>
 
       <main className="content">
