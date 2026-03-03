@@ -1,13 +1,15 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
+import { DateRangePicker } from "../../components/DateRangePicker";
 import { ApiError } from "../../api/errors";
 import { eventsApi } from "../../api/events.ts";
 import type { EventEntity, EventInput } from "../../api/events.ts";
+import { EventDetailsModal } from "./EventDetailsModal";
 
 type Flash = { type: "success" | "error"; message: string } | null;
 
@@ -16,6 +18,7 @@ const statusOptions = ["draft", "published", "cancelled", "finished"] as const;
 
 const formSchema = z.object({
   title: z.string().trim().min(1, "Informe o título do evento"),
+  description: z.string().trim().optional(),
   starts_at: z.string().min(1, "Informe a data/hora de início"),
   location: z.string().trim().optional(),
   price: z.union([z.string().trim(), z.number()]).optional(), // ✅ sem transform
@@ -24,6 +27,21 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
+
+function GearIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+      <path
+        d="M19.14 12.94a7.8 7.8 0 0 0 .05-.94 7.8 7.8 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.38 7.38 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54a7.38 7.38 0 0 0-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.7 8.84a.5.5 0 0 0 .12.64l2.03 1.58a7.8 7.8 0 0 0-.05.94 7.8 7.8 0 0 0 .05.94L2.82 14.52a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96c.5.39 1.05.72 1.63.94l.36 2.54a.5.5 0 0 0 .5.42h3.84a.5.5 0 0 0 .5-.42l.36-2.54c.58-.22 1.13-.55 1.63-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
 
 function toDateTimeLocal(iso: string) {
   const d = new Date(iso);
@@ -47,20 +65,22 @@ function displayName(e: EventEntity) {
 }
 
 export function EventsPage() {
+  const navigate = useNavigate();
   const qc = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [flash, setFlash] = useState<Flash>(null);
 
   // filtros
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<string>("");
-  const [dateFrom, setDateFrom] = useState<string>(""); // yyyy-mm-dd
-  const [dateTo, setDateTo] = useState<string>("");     // yyyy-mm-dd
+  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" });
   const [location, setLocation] = useState<string>("");
 
   // modal/form
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<EventEntity | null>(null);
+  const [detailsEvent, setDetailsEvent] = useState<EventEntity | null>(null);
 
   const eventsQuery = useQuery({
     queryKey: ["events"],
@@ -115,8 +135,8 @@ export function EventsPage() {
     const needle = q.trim().toLowerCase();
     const locNeedle = location.trim().toLowerCase();
 
-    const from = dateFrom ? new Date(`${dateFrom}T00:00:00`).getTime() : null;
-    const to = dateTo ? new Date(`${dateTo}T23:59:59`).getTime() : null;
+    const from = dateRange.start ? new Date(`${dateRange.start}T00:00:00`).getTime() : null;
+    const to = dateRange.end ? new Date(`${dateRange.end}T23:59:59`).getTime() : null;
 
     return data.filter((e) => {
       const title = displayName(e).toLowerCase();
@@ -133,7 +153,14 @@ export function EventsPage() {
 
       return true;
     });
-  }, [eventsQuery.data, q, status, dateFrom, dateTo, location]);
+  }, [eventsQuery.data, q, status, dateRange.start, dateRange.end, location]);
+
+  const searchEventId = Number(searchParams.get("eventId") ?? "");
+  const detailsEventFromQuery = useMemo(() => {
+    if (!Number.isFinite(searchEventId) || searchEventId <= 0) return null;
+    return (eventsQuery.data ?? []).find((item) => item.id === searchEventId) ?? null;
+  }, [eventsQuery.data, searchEventId]);
+  const activeDetailsEvent = detailsEvent ?? detailsEventFromQuery;
 
   function openCreate() {
     setFlash(null);
@@ -152,6 +179,26 @@ export function EventsPage() {
     const ok = window.confirm("Tem certeza que deseja remover este evento?");
     if (!ok) return;
     deleteMut.mutate(id);
+  }
+
+  function openDetails(event: EventEntity) {
+    setDetailsEvent(event);
+    const next = new URLSearchParams(searchParams);
+    next.set("eventId", String(event.id));
+    setSearchParams(next, { replace: true });
+  }
+
+  function closeDetails() {
+    setDetailsEvent(null);
+    const next = new URLSearchParams(searchParams);
+    next.delete("eventId");
+    next.delete("intent");
+    setSearchParams(next, { replace: true });
+  }
+
+  function handleBuy(event: EventEntity, paymentMethod: "pix" | "card" | "boleto") {
+    if (event.owned_by_me) return;
+    navigate(`/eventos/${event.id}/checkin?payment=${paymentMethod}`);
   }
 
   return (
@@ -173,13 +220,15 @@ export function EventsPage() {
         </div>
       )}
 
-      <div className="toolbar">
+      <div className="dashboardSearch">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar por título/local..."
+          placeholder="Pesquisar por título..."
         />
+      </div>
 
+      <div className="toolbar eventsToolbar">
         <select value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">Status (todos)</option>
           {statusOptions.map((s) => (
@@ -188,21 +237,13 @@ export function EventsPage() {
         </select>
 
         <input
+          className="location"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
           placeholder="Filtrar por local..."
         />
 
-        <div className="dateFilters">
-          <label>
-            De
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-          </label>
-          <label>
-            Até
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-          </label>
-        </div>
+        <DateRangePicker value={dateRange} onChange={setDateRange} placeholder="Período do evento" />
       </div>
 
       {eventsQuery.isLoading && <p>Carregando eventos...</p>}
@@ -230,7 +271,7 @@ export function EventsPage() {
                 <th>Local</th>
                 <th>Status</th>
                 <th>Preço</th>
-                <th style={{ width: 260 }}>Ações</th>
+                <th style={{ width: 220 }}>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -242,10 +283,17 @@ export function EventsPage() {
                   <td>{e.status ?? "-"}</td>
                   <td>{e.price ?? "-"}</td>
                   <td className="actions">
-                    <Link className="btn" to={`/eventos/${e.id}/checkin`}>Check-in</Link>
-                    <button className="btn" onClick={() => openEdit(e)}>Editar</button>
-                    <button className="btn danger" onClick={() => confirmDelete(e.id)}>
-                      {deleteMut.isPending ? "Removendo..." : "Remover"}
+                    <button className="btn" type="button" onClick={() => openDetails(e)}>
+                      Check-in
+                    </button>
+                    <button
+                      className="btn"
+                      type="button"
+                      onClick={() => setFlash({ type: "success", message: "Opções avançadas em construção." })}
+                      aria-label="Opções avançadas"
+                      title="Opções avançadas"
+                    >
+                      <GearIcon />
                     </button>
                   </td>
                 </tr>
@@ -264,6 +312,24 @@ export function EventsPage() {
             setFlash(null);
             if (editing) updateMut.mutate({ id: editing.id, input });
             else createMut.mutate(input);
+          }}
+        />
+      )}
+
+      {activeDetailsEvent && (
+        <EventDetailsModal
+          key={activeDetailsEvent.id}
+          event={activeDetailsEvent}
+          onClose={closeDetails}
+          onSave={() => setFlash({ type: "success", message: "Evento salvo nos favoritos." })}
+          onBuy={(paymentMethod) => handleBuy(activeDetailsEvent, paymentMethod)}
+          onEdit={() => {
+            closeDetails();
+            openEdit(activeDetailsEvent);
+          }}
+          onDelete={() => {
+            closeDetails();
+            void confirmDelete(activeDetailsEvent.id);
           }}
         />
       )}
@@ -292,6 +358,7 @@ function EventModal({
   defaultValues: editing
     ? {
         title: editing.title,
+        description: editing.description ?? "",
         starts_at: toDateTimeLocal(editing.starts_at),
         location: editing.location ?? "",
         price: editing.price != null ? String(editing.price) : "",
@@ -300,6 +367,7 @@ function EventModal({
       }
     : {
         title: "",
+        description: "",
         starts_at: "",
         location: "",
         price: "",
@@ -331,6 +399,7 @@ function submit(data: FormData) {
 
   const input: EventInput = {
     title,
+    description: data.description?.trim() ? data.description.trim() : null,
     starts_at: fromDateTimeLocal(data.starts_at),
     location: data.location?.trim() ? data.location.trim() : null,
     price,
@@ -356,6 +425,12 @@ function submit(data: FormData) {
           </label>
 
           <label>
+            Descrição
+            <textarea {...register("description")} placeholder="Descreva o evento..." rows={4} />
+            {errors.description && <span className="error">{errors.description.message}</span>}
+          </label>
+
+          <label>
             Início (data/hora)
             <input type="datetime-local" {...register("starts_at")} />
             {errors.starts_at && <span className="error">{errors.starts_at.message}</span>}
@@ -369,7 +444,14 @@ function submit(data: FormData) {
 
             <label>
               Status
-              <input {...register("status")} placeholder="published / draft / ..." />
+              <select {...register("status")}>
+                <option value="">Selecione</option>
+                {statusOptions.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label>

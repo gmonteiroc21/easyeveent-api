@@ -7,15 +7,18 @@ export type EventStatus = string;
 export type EventEntity = {
   id: number;
   title: string;
+  description?: string | null;
   starts_at: string;
   location?: string | null;
   price?: number | null;
   banner?: string | null;
   status?: EventStatus | null;
+  owned_by_me?: boolean;
 };
 
 export type EventInput = {
   title: string;
+  description?: string | null;
   starts_at: string;
   location?: string | null;
   price: number | null;

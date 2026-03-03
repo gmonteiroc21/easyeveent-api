@@ -20,6 +20,29 @@ h1,h2 { margin: 0 0 12px; }
   padding-left: -5px;
 }
 .nav { display: flex; flex-direction: column; gap: 8px; }
+.navItem {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: #c7d3ec;
+}
+
+.navItem:hover {
+  background: #121a2c;
+}
+
+.navItem.active {
+  background: rgba(255, 156, 42, 0.18);
+  border: 1px solid #b84d06;
+  color: #ffffff;
+}
+
+.sidebarLogout {
+  margin-top: auto;
+}
+
 .content { padding: 24px; }
 
 .center { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
@@ -27,11 +50,19 @@ h1,h2 { margin: 0 0 12px; }
 
 label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 input { padding: 10px 12px; border-radius: 10px; border: 1px solid #1c2433; background: #0b0f19; color: #e6eaf2; }
+textarea { padding: 10px 12px; border-radius: 10px; border: 1px solid #1c2433; background: #0b0f19; color: #e6eaf2; resize: vertical; }
+select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #1c2433;
+  background: #0b0f19;
+  color: #e6eaf2;
+}
 .error { color: #ff9090; font-size: 12px; }
 .alert { background: #2a1620; border: 1px solid #5a1f2f; padding: 10px 12px; border-radius: 10px; }
 
 .btn { padding: 10px 12px; border-radius: 10px; border: 1px solid #1c2433; background: #121a2c; color: #e6eaf2; cursor: pointer; }
-.btn.primary { background: #2a5cff; border-color: #2a5cff; }
+.btn.primary { background: rgba(255, 156, 42, 0.18); border-color: #b84d06; }
 .btn:disabled { opacity: .6; cursor: not-allowed; }
 
 .pageHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
@@ -39,6 +70,14 @@ input { padding: 10px 12px; border-radius: 10px; border: 1px solid #1c2433; back
 
 .toolbar { display: grid; grid-template-columns: 1fr 200px 240px 1fr; gap: 10px; margin: 12px 0 16px; }
 .toolbar input, .toolbar select { width: 100%; }
+.eventsToolbar {
+  grid-template-columns: 200px 240px 280px;
+  gap: 10px;
+}
+.eventsToolbar .dateRangePicker {
+  width: 100%;
+  justify-self: stretch;
+}
 
 .dateFilters { display: flex; gap: 10px; justify-content: flex-end; }
 .dateFilters label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; opacity: .9; }
@@ -50,7 +89,7 @@ input { padding: 10px 12px; border-radius: 10px; border: 1px solid #1c2433; back
 .table th { font-size: 12px; opacity: .8; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-.flash { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; margin: 10px 0; border: 1px solid #1c2433; }
+.flash { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; margin: 10px 0; border: 1px solid #1c2433; position: relative; z-index: 1200; }
 .flash.success { background: #102318; border-color: #1c4a2d; }
 .flash.error { background: #2a1620; border-color: #5a1f2f; }
 
@@ -58,10 +97,102 @@ input { padding: 10px 12px; border-radius: 10px; border: 1px solid #1c2433; back
 
 .empty { padding: 16px; border: 1px dashed #1c2433; border-radius: 12px; opacity: .9; }
 
-.modalBackdrop { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: grid; place-items: center; padding: 16px; }
+.modalBackdrop { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: grid; place-items: center; padding: 16px; z-index: 1000; }
 .modal { width: min(820px, 100%); background: #0f1524; border: 1px solid #1c2433; border-radius: 12px; padding: 14px; }
 .modalHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .modalFooter { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+
+.eventDetailsModal {
+  width: min(980px, 100%);
+  background: #0f1524;
+  border: 1px solid #1c2433;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.eventDetailsBannerWrap {
+  position: relative;
+  height: 240px;
+  border-bottom: 1px solid #1c2433;
+}
+
+.eventDetailsBanner {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.eventDetailsClose {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #1c2433;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: #121a2c;
+  color: #e6eaf2;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.eventDetailsContent {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 16px;
+  padding: 16px;
+}
+
+.eventDetailsMain h3 {
+  margin: 0 0 10px;
+}
+
+.eventDetailsMain p {
+  margin: 0;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+.eventDetailsSide {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.eventDetailsActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.eventPurchaseSection {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.eventPurchaseSection h3 {
+  margin: 0;
+}
+
+.eventPurchaseForm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.eventPurchaseForm label {
+  width: 100%;
+}
+
+.eventPurchaseForm .eventDetailsActions {
+  grid-column: 1 / -1;
+}
 
 .form { display: flex; flex-direction: column; gap: 10px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -93,6 +224,117 @@ input { padding: 10px 12px; border-radius: 10px; border: 1px solid #1c2433; back
 .dashboardSearch {
   margin: 8px 0 16px;
   max-width: 420px;
+}
+
+.eventsToolbar .location {
+  width: 200px;
+  justify-self: start;
+}
+
+.dateRangePicker {
+  position: relative;
+}
+
+.dateRangePopover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 320px;
+  background: #0f1524;
+  border: 1px solid #1c2433;
+  border-radius: 12px;
+  padding: 10px;
+  z-index: 1300;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35);
+}
+
+.dateRangeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  text-transform: capitalize;
+}
+
+.dateRangeWeekRow,
+.dateRangeGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.dateRangeWeekRow {
+  margin-bottom: 6px;
+}
+
+.dateRangeWeekRow span {
+  text-align: center;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.dateCell {
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #e6eaf2;
+  cursor: pointer;
+}
+
+.dateCell:hover {
+  border-color: #b84d06;
+}
+
+.dateCell.inRange {
+  background: rgba(42, 92, 255, 0.28);
+}
+
+.dateCell.edge {
+  background: #b84d06;
+  border-color: #b84d06;
+}
+
+.dateCell.empty {
+  visibility: hidden;
+}
+
+.dateRangeFooter {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.checkinInfoCard {
+  margin-top: 12px;
+  border: 1px solid #1c2433;
+  border-radius: 12px;
+  background: #0f1524;
+  padding: 16px;
+  max-width: 720px;
+}
+
+.checkinInfoList {
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.checkinInfoList div {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 10px;
+}
+
+.checkinInfoList dt {
+  margin: 0;
+  opacity: 0.75;
+}
+
+.checkinInfoList dd {
+  margin: 0;
+  font-weight: 600;
 }
 
 .dashboardGrid {
@@ -129,7 +371,7 @@ input { padding: 10px 12px; border-radius: 10px; border: 1px solid #1c2433; back
   display: grid;
   place-items: center;
   padding: 16px;
-  background: linear-gradient(140deg, #1d2d59 0%, #2a5cff 50%, #57d6c1 100%);
+  background: linear-gradient(140deg, #1d2d59 0%, #b84d06 50%, #57d6c1 100%);
   color: #f7faff;
   text-align: center;
 }
@@ -230,10 +472,25 @@ input { padding: 10px 12px; border-radius: 10px; border: 1px solid #1c2433; back
     grid-template-columns: 1fr 1fr;
   }
 
+  .eventsToolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .eventsToolbar .dateRangePicker {
+    width: 100%;
+    justify-self: stretch;
+    grid-column: span 2;
+  }
+
   .dateFilters {
     grid-column: span 2;
     justify-content: flex-start;
     flex-wrap: wrap;
+  }
+
+  .dateRangePopover {
+    right: auto;
+    left: 0;
   }
 }
 
@@ -249,6 +506,26 @@ input { padding: 10px 12px; border-radius: 10px; border: 1px solid #1c2433; back
 
   .content {
     padding: 16px;
+  }
+
+  .eventDetailsBannerWrap {
+    height: 180px;
+  }
+
+  .eventDetailsContent {
+    grid-template-columns: 1fr;
+  }
+
+  .eventPurchaseForm {
+    grid-template-columns: 1fr;
+  }
+
+  .eventDetailsActions {
+    justify-content: flex-start;
+  }
+
+  .checkinInfoList div {
+    grid-template-columns: 1fr;
   }
 
   .dashboardGrid {
