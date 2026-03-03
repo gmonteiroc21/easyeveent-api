@@ -15,6 +15,9 @@ class Event < ApplicationRecord
   # Enum
   enum :status, { draft: 0, published: 1, cancelled: 2, finished: 3 }
 
+  # Vitrine pública do dashboard
+  scope :showcase, -> { published.order(starts_at: :asc) }
+
   # Validações
   validates :title, presence: true
   validates :starts_at, presence: true
