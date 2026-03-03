@@ -156,11 +156,25 @@ export function EventsPage() {
   }, [eventsQuery.data, q, status, dateRange.start, dateRange.end, location]);
 
   const searchEventId = Number(searchParams.get("eventId") ?? "");
+  const editEventId = Number(searchParams.get("editEventId") ?? "");
   const detailsEventFromQuery = useMemo(() => {
     if (!Number.isFinite(searchEventId) || searchEventId <= 0) return null;
     return (eventsQuery.data ?? []).find((item) => item.id === searchEventId) ?? null;
   }, [eventsQuery.data, searchEventId]);
   const activeDetailsEvent = detailsEvent ?? detailsEventFromQuery;
+  const editingFromQuery = useMemo(() => {
+    if (!Number.isFinite(editEventId) || editEventId <= 0) return null;
+    return (eventsQuery.data ?? []).find((item) => item.id === editEventId) ?? null;
+  }, [eventsQuery.data, editEventId]);
+  const activeEditing = editing ?? editingFromQuery;
+  const shouldShowEventModal = modalOpen || Boolean(activeEditing);
+
+  function clearEditQueryParam() {
+    if (!searchParams.has("editEventId")) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete("editEventId");
+    setSearchParams(next, { replace: true });
+  }
 
   function openCreate() {
     setFlash(null);
@@ -196,9 +210,9 @@ export function EventsPage() {
     setSearchParams(next, { replace: true });
   }
 
-  function handleBuy(event: EventEntity, paymentMethod: "pix" | "card" | "boleto") {
+  function handleBuy(event: EventEntity) {
     if (event.owned_by_me) return;
-    navigate(`/eventos/${event.id}/checkin?payment=${paymentMethod}`);
+    navigate(`/eventos/${event.id}/compra?mode=form`);
   }
 
   return (
@@ -284,12 +298,12 @@ export function EventsPage() {
                   <td>{e.price ?? "-"}</td>
                   <td className="actions">
                     <button className="btn" type="button" onClick={() => openDetails(e)}>
-                      Check-in
+                      Detalhes do Evento
                     </button>
                     <button
                       className="btn"
                       type="button"
-                      onClick={() => setFlash({ type: "success", message: "Opções avançadas em construção." })}
+                      onClick={() => navigate(`/eventos/${e.id}/checkin`)}
                       aria-label="Opções avançadas"
                       title="Opções avançadas"
                     >
@@ -303,14 +317,22 @@ export function EventsPage() {
         </div>
       )}
 
-      {modalOpen && (
+      {shouldShowEventModal && (
         <EventModal
-          editing={editing}
+          editing={activeEditing}
           busy={createMut.isPending || updateMut.isPending}
-          onClose={() => { setModalOpen(false); setEditing(null); }}
+          onClose={() => {
+            setModalOpen(false);
+            setEditing(null);
+            clearEditQueryParam();
+          }}
           onSubmit={(input) => {
             setFlash(null);
-            if (editing) updateMut.mutate({ id: editing.id, input });
+            const editingTarget = activeEditing;
+            if (editingTarget) {
+              clearEditQueryParam();
+              updateMut.mutate({ id: editingTarget.id, input });
+            }
             else createMut.mutate(input);
           }}
         />
@@ -322,7 +344,7 @@ export function EventsPage() {
           event={activeDetailsEvent}
           onClose={closeDetails}
           onSave={() => setFlash({ type: "success", message: "Evento salvo nos favoritos." })}
-          onBuy={(paymentMethod) => handleBuy(activeDetailsEvent, paymentMethod)}
+          onBuy={() => handleBuy(activeDetailsEvent)}
           onEdit={() => {
             closeDetails();
             openEdit(activeDetailsEvent);

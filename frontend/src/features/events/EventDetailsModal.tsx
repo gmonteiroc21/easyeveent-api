@@ -5,13 +5,10 @@ type EventDetailsModalProps = {
   event: EventEntity;
   onClose: () => void;
   onSave: () => void;
-  onBuy: (paymentMethod: PaymentMethod) => void;
+  onBuy: () => void;
   onEdit: () => void;
   onDelete: () => void;
 };
-
-type PaymentMethod = "pix" | "card" | "boleto";
-type TicketType = "full" | "half";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString();
@@ -65,15 +62,25 @@ function XIcon() {
   );
 }
 
+function VerticalDotsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+      <circle cx="12" cy="5" r="1.8" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.8" fill="currentColor" />
+      <circle cx="12" cy="19" r="1.8" fill="currentColor" />
+    </svg>
+  );
+}
+
 type EventDetailsOverviewProps = {
   event: EventEntity;
   onSave: () => void;
-  onStartBuy: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  onBuy: () => void;
 };
 
-function EventDetailsOverview({ event, onSave, onStartBuy, onEdit, onDelete }: EventDetailsOverviewProps) {
+function EventDetailsOverview({ event, onSave, onBuy }: EventDetailsOverviewProps) {
+  const isOwner = Boolean(event.owned_by_me);
+
   return (
     <>
       <section className="eventDetailsMain">
@@ -101,86 +108,18 @@ function EventDetailsOverview({ event, onSave, onStartBuy, onEdit, onDelete }: E
           </div>
         </dl>
 
-        <div className="eventDetailsActions">
-          <button type="button" className="btn" onClick={onSave}>
-            Salvar
-          </button>
-          <button type="button" className="btn primary" onClick={onStartBuy} disabled={Boolean(event.owned_by_me)}>
-            Comprar
-          </button>
-        </div>
-
-        <div className="eventDetailsActions">
-          <button type="button" className="btn" onClick={onEdit}>
-            Editar
-          </button>
-          <button type="button" className="btn danger" onClick={onDelete}>
-            Remover
-          </button>
-        </div>
+        {!isOwner && (
+          <div className="eventDetailsActions">
+            <button type="button" className="btn" onClick={onSave}>
+              Salvar
+            </button>
+            <button type="button" className="btn primary" onClick={onBuy}>
+              Comprar
+            </button>
+          </div>
+        )}
       </aside>
     </>
-  );
-}
-
-type EventPurchaseFormProps = {
-  event: EventEntity;
-  onBack: () => void;
-  onSubmit: (paymentMethod: PaymentMethod) => void;
-};
-
-function EventPurchaseForm({ event, onBack, onSubmit }: EventPurchaseFormProps) {
-  const ticketTypeAvailable = (event.price ?? 0) > 0;
-  const [ticketType, setTicketType] = useState<TicketType>("full");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
-
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (ticketTypeAvailable && !ticketType) return;
-    if (!paymentMethod) return;
-    onSubmit(paymentMethod);
-  }
-
-  return (
-    <section className="eventPurchaseSection">
-      <h3>Finalizar compra</h3>
-      <p className="muted">Evento: {event.title}</p>
-
-      <form className="eventPurchaseForm" onSubmit={handleSubmit}>
-        {ticketTypeAvailable ? (
-          <label>
-            Tipo de ingresso
-            <select value={ticketType} onChange={(e) => setTicketType(e.target.value as TicketType)}>
-              <option value="full">Inteira</option>
-              <option value="half">Meia entrada</option>
-            </select>
-          </label>
-        ) : (
-          <p className="muted">Evento gratuito: sem seleção de tipo de ingresso.</p>
-        )}
-
-        <label>
-          Método de pagamento
-          <select
-            value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-          >
-            <option value="pix">PIX</option>
-            <option value="card">Cartão</option>
-            <option value="boleto">Boleto</option>
-          </select>
-        </label>
-
-        <div className="eventDetailsActions">
-          <button type="button" className="btn" onClick={onBack}>
-            Voltar
-          </button>
-          <button type="submit" className="btn primary">
-            Confirmar compra
-          </button>
-        </div>
-      </form>
-    </section>
   );
 }
 
@@ -193,7 +132,8 @@ export function EventDetailsModal({
   onDelete,
 }: EventDetailsModalProps) {
   const bannerSrc = event.banner?.trim() || buildPlaceholderBanner(event.title);
-  const [mode, setMode] = useState<"details" | "purchase">("details");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const isOwner = Boolean(event.owned_by_me);
 
   return (
     <div className="modalBackdrop" onMouseDown={onClose}>
@@ -201,23 +141,54 @@ export function EventDetailsModal({
         <div className="eventDetailsBannerWrap">
           <img className="eventDetailsBanner" src={bannerSrc} alt={`Banner do evento ${event.title}`} />
 
-          <button className="eventDetailsClose" type="button" onClick={onClose} aria-label="Fechar modal">
-            <XIcon />
-          </button>
+          <div className="eventDetailsTopActions">
+            {isOwner && (
+              <div className="eventSettingsContainer">
+                <button
+                  type="button"
+                  className="eventSettingsTrigger"
+                  onClick={() => setSettingsOpen((prev) => !prev)}
+                  aria-label="Abrir configurações do evento"
+                  title="Configurações"
+                >
+                  <VerticalDotsIcon />
+                </button>
+
+                {settingsOpen && (
+                  <div className="eventSettingsMenu">
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => {
+                        setSettingsOpen(false);
+                        onEdit();
+                      }}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="btn danger"
+                      onClick={() => {
+                        setSettingsOpen(false);
+                        onDelete();
+                      }}
+                    >
+                      Remover
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button className="eventDetailsClose" type="button" onClick={onClose} aria-label="Fechar modal">
+              <XIcon />
+            </button>
+          </div>
         </div>
 
         <div className="eventDetailsContent">
-          {mode === "details" ? (
-            <EventDetailsOverview
-              event={event}
-              onSave={onSave}
-              onStartBuy={() => setMode("purchase")}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
-          ) : (
-            <EventPurchaseForm event={event} onBack={() => setMode("details")} onSubmit={onBuy} />
-          )}
+          <EventDetailsOverview event={event} onSave={onSave} onBuy={onBuy} />
         </div>
       </div>
     </div>
