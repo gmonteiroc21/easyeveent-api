@@ -5,8 +5,10 @@ import { AppShell } from "../layout/AppShell";
 import { LoginPage } from "../features/auth/LoginPage";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
 import { EventsPage } from "../features/events/EventsPage";
+import { EventDetailsPage } from "../features/events/EventDetailsPage";
 import { ParticipantsPage } from "../features/participants/ParticipantsPage";
 import { CheckinRulesPage } from "../features/checkin/CheckinRulesPage";
+import { PurchaseInfoPage } from "../features/purchase/PurchaseInfoPage";
 
 const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
@@ -22,7 +24,10 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: "dashboard", element: <DashboardPage /> },
       { path: "eventos", element: <EventsPage /> },
+      { path: "eventos/:eventId", element: <EventDetailsPage /> },
       { path: "eventos/:eventId/checkin", element: <CheckinRulesPage /> },
+      { path: "eventos/:eventId/compra", element: <PurchaseInfoPage /> },
+      { path: "events/:eventId/purchase", element: <PurchaseInfoPage /> },
       { path: "participantes", element: <ParticipantsPage /> },
     ],
   },

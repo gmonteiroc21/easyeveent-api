@@ -154,6 +154,8 @@ export function EventsPage() {
       return true;
     });
   }, [eventsQuery.data, q, status, dateRange.start, dateRange.end, location]);
+  const ownerEvents = filtered.filter((event) => Boolean(event.owned_by_me));
+  const participantEvents = filtered.filter((event) => !event.owned_by_me);
 
   const searchEventId = Number(searchParams.get("eventId") ?? "");
   const editEventId = Number(searchParams.get("editEventId") ?? "");
@@ -212,7 +214,7 @@ export function EventsPage() {
 
   function handleBuy(event: EventEntity) {
     if (event.owned_by_me) return;
-    navigate(`/eventos/${event.id}/compra?mode=form`);
+    navigate(`/events/${event.id}/purchase?mode=form`);
   }
 
   return (
@@ -276,45 +278,92 @@ export function EventsPage() {
       )}
 
       {!eventsQuery.isLoading && !eventsQuery.isError && filtered.length > 0 && (
-        <div className="tableWrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Título</th>
-                <th>Início</th>
-                <th>Local</th>
-                <th>Status</th>
-                <th>Preço</th>
-                <th style={{ width: 220 }}>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((e) => (
-                <tr key={e.id}>
-                  <td>{displayName(e)}</td>
-                  <td>{new Date(e.starts_at).toLocaleString()}</td>
-                  <td>{e.location ?? "-"}</td>
-                  <td>{e.status ?? "-"}</td>
-                  <td>{e.price ?? "-"}</td>
-                  <td className="actions">
-                    <button className="btn" type="button" onClick={() => openDetails(e)}>
-                      Detalhes do Evento
-                    </button>
-                    <button
-                      className="btn"
-                      type="button"
-                      onClick={() => navigate(`/eventos/${e.id}/checkin`)}
-                      aria-label="Opções avançadas"
-                      title="Opções avançadas"
-                    >
-                      <GearIcon />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <h3>Meus eventos (owner)</h3>
+          {ownerEvents.length === 0 ? (
+            <div className="empty">
+              <p>Nenhum evento como owner com os filtros atuais.</p>
+            </div>
+          ) : (
+            <div className="tableWrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Título</th>
+                    <th>Início</th>
+                    <th>Local</th>
+                    <th>Status</th>
+                    <th>Preço</th>
+                    <th style={{ width: 220 }}>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ownerEvents.map((e) => (
+                    <tr key={e.id}>
+                      <td>{displayName(e)}</td>
+                      <td>{new Date(e.starts_at).toLocaleString()}</td>
+                      <td>{e.location ?? "-"}</td>
+                      <td>{e.status ?? "-"}</td>
+                      <td>{e.price ?? "-"}</td>
+                      <td className="actions">
+                        <button className="btn" type="button" onClick={() => openDetails(e)}>
+                          Detalhes do Evento
+                        </button>
+                        <button
+                          className="btn"
+                          type="button"
+                          onClick={() => navigate(`/eventos/${e.id}/checkin`)}
+                          aria-label="Opções avançadas"
+                          title="Opções avançadas"
+                        >
+                          <GearIcon />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <h3>Eventos em que participo</h3>
+          {participantEvents.length === 0 ? (
+            <div className="empty">
+              <p>Nenhum evento como participante com os filtros atuais.</p>
+            </div>
+          ) : (
+            <div className="tableWrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Título</th>
+                    <th>Início</th>
+                    <th>Local</th>
+                    <th>Status</th>
+                    <th>Preço</th>
+                    <th style={{ width: 220 }}>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {participantEvents.map((e) => (
+                    <tr key={e.id}>
+                      <td>{displayName(e)}</td>
+                      <td>{new Date(e.starts_at).toLocaleString()}</td>
+                      <td>{e.location ?? "-"}</td>
+                      <td>{e.status ?? "-"}</td>
+                      <td>{e.price ?? "-"}</td>
+                      <td className="actions">
+                        <button className="btn" type="button" onClick={() => openDetails(e)}>
+                          Detalhes do Evento
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
 
       {shouldShowEventModal && (

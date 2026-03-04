@@ -1,6 +1,7 @@
 // frontend/src/api/events.ts
 import { env } from "./env";
 import { request } from "./httpClient";
+import type { CheckinRuleEntity } from "./checkinRules";
 
 export type EventStatus = string;
 
@@ -14,6 +15,7 @@ export type EventEntity = {
   banner?: string | null;
   status?: EventStatus | null;
   owned_by_me?: boolean;
+  checkin_rules?: CheckinRuleEntity[];
 };
 
 export type EventInput = {
@@ -32,9 +34,30 @@ function isRecord(v: unknown): v is RecordUnknown {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
-function isEventEntity(v: unknown): v is EventEntity {
+function isCheckinRuleEntity(v: unknown): v is CheckinRuleEntity {
   if (!isRecord(v)) return false;
-  return typeof v.id === "number" && typeof v.title === "string" && typeof v.starts_at === "string";
+  return (
+    typeof v.id === "number" &&
+    typeof v.event_id === "number" &&
+    typeof v.rule_type === "string" &&
+    typeof v.name === "string" &&
+    typeof v.window_before_minutes === "number" &&
+    typeof v.window_after_minutes === "number" &&
+    typeof v.is_required === "boolean" &&
+    typeof v.is_active === "boolean" &&
+    typeof v.sort_order === "number" &&
+    isRecord(v.config)
+  );
+}
+
+export function isEventEntity(v: unknown): v is EventEntity {
+  if (!isRecord(v)) return false;
+  if (!(typeof v.id === "number" && typeof v.title === "string" && typeof v.starts_at === "string")) {
+    return false;
+  }
+  if (v.checkin_rules == null) return true;
+  if (!Array.isArray(v.checkin_rules)) return false;
+  return v.checkin_rules.every(isCheckinRuleEntity);
 }
 
 function extractEvent(payload: unknown): EventEntity {
@@ -95,5 +118,9 @@ export const eventsApi = {
 
   async remove(id: number): Promise<void> {
     await request<unknown>(`${env.eventsPath}/${id}`, { method: "DELETE" });
+  },
+
+  async purchase(id: number): Promise<void> {
+    await request<unknown>(`${env.eventsPath}/${id}/purchase`, { method: "POST" });
   },
 };

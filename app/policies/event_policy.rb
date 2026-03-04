@@ -19,6 +19,10 @@ class EventPolicy < ApplicationPolicy
     owner?
   end
 
+  def purchase?
+    !owner?
+  end
+
   class Scope < Scope
     def resolve
       # eventos em que o usuário tem vínculo (owner ou participant)

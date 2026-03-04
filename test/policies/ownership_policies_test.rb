@@ -9,6 +9,8 @@ class OwnershipPoliciesTest < ActiveSupport::TestCase
 
     assert UserEventPolicy.new(owner, membership).update?
     assert_not UserEventPolicy.new(outsider, membership).update?
+    assert UserEventPolicy.new(owner, event).index?
+    assert_not UserEventPolicy.new(outsider, event).index?
   end
 
   test "checkin rule policy allows owner and blocks non owner" do
