@@ -137,7 +137,8 @@ function normalizeSortOrder(rules: DraftRule[]) {
   return rules.map((rule, index) => ({ ...rule, sort_order: index + 1 }));
 }
 
-function defaultValueForField(field: ConfigField): string | boolean {
+function defaultValueForField(ruleType: RuleType, field: ConfigField): string | boolean {
+  if (ruleType === "qr_code" && field.key === "expires_in_minutes") return "60";
   if (field.input === "checkbox") return false;
   if (field.input === "select") return field.options?.[0]?.value ?? "";
   return "";
@@ -151,7 +152,7 @@ function ensureRuleConfig(ruleType: RuleType, current?: Record<string, unknown>)
     if (current && Object.prototype.hasOwnProperty.call(current, field.key)) {
       next[field.key] = current[field.key];
     } else {
-      next[field.key] = defaultValueForField(field);
+      next[field.key] = defaultValueForField(ruleType, field);
     }
   });
 

@@ -1,10 +1,10 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { ApiError } from "../../api/errors";
 import { dashboardApi } from "../../api/dashboardApi";
-import { eventsApi } from "../../api/events";
+import { eventsApi, type PurchaseResponse } from "../../api/events";
 import type { CheckinRuleEntity } from "../../api/checkinRules";
 import { evaluateRules } from "../checkin/model/evaluateRules";
 
@@ -58,9 +58,24 @@ function getApiErrorDetails(err: ApiError): string[] {
   return base.filter((item): item is string => typeof item === "string" && item.trim() !== "");
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isPurchaseResponse(value: unknown): value is PurchaseResponse {
+  if (!isRecord(value)) return false;
+  if (!isRecord(value.membership) || !isRecord(value.purchase)) return false;
+  return (
+    typeof value.membership.id === "number" &&
+    typeof value.membership.user_id === "number" &&
+    typeof value.membership.event_id === "number"
+  );
+}
+
 export function PurchaseInfoPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const [flash, setFlash] = useState<Flash>(null);
   const [formValues, setFormValues] = useState<PurchaseFormValues>({ payment: "pix", ticket: "full", document: "" });
@@ -70,6 +85,12 @@ export function PurchaseInfoPage() {
   const paymentMethod = searchParams.get("payment") ?? "";
   const ticketType = searchParams.get("ticket") ?? "";
   const mode = searchParams.get("mode") ?? "";
+  const purchaseResult = isPurchaseResponse(location.state) ? location.state : null;
+  const qrCode = purchaseResult?.purchase?.qr_code ?? null;
+  const emailConfirmation = purchaseResult?.purchase?.email_confirmation ?? null;
+  const qrImageUrl = qrCode?.token
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrCode.token)}`
+    : null;
 
   const eventQuery = useQuery({
     queryKey: ["dashboard-event", numericEventId, "purchase"],
@@ -79,17 +100,17 @@ export function PurchaseInfoPage() {
 
   const purchaseMut = useMutation({
     mutationFn: async (values: PurchaseFormValues) => {
-      await eventsApi.purchase(numericEventId, {
+      return eventsApi.purchase(numericEventId, {
         ticket_type: values.ticket ?? "full",
         payment_method: values.payment,
         document: values.document?.trim() || undefined,
       });
     },
-    onSuccess: (_data, values: PurchaseFormValues) => {
+    onSuccess: (data, values: PurchaseFormValues) => {
       const params = new URLSearchParams();
       params.set("payment", values.payment);
       if (values.ticket) params.set("ticket", values.ticket);
-      navigate(`/events/${numericEventId}/purchase?${params.toString()}`, { replace: true });
+      navigate(`/events/${numericEventId}/purchase?${params.toString()}`, { replace: true, state: data });
       setFlash({ type: "success", message: "Compra confirmada com sucesso." });
     },
     onError: (error) => {
@@ -134,14 +155,22 @@ export function PurchaseInfoPage() {
   });
 
   const paymentLabel = useMemo(() => {
+    const fromPurchase = purchaseResult?.purchase?.payment_method;
+    if (typeof fromPurchase === "string" && fromPurchase.trim() !== "") {
+      return paymentMethodLabel[fromPurchase] ?? fromPurchase;
+    }
     if (!paymentMethod) return "Não informado";
     return paymentMethodLabel[paymentMethod] ?? paymentMethod;
-  }, [paymentMethod]);
+  }, [paymentMethod, purchaseResult]);
 
   const ticketLabel = useMemo(() => {
+    const fromPurchase = purchaseResult?.purchase?.ticket_type;
+    if (typeof fromPurchase === "string" && fromPurchase.trim() !== "") {
+      return ticketTypeLabel[fromPurchase] ?? fromPurchase;
+    }
     if (!ticketType) return "Não informado";
     return ticketTypeLabel[ticketType] ?? ticketType;
-  }, [ticketType]);
+  }, [ticketType, purchaseResult]);
 
   const eventData = eventQuery.data;
   const alreadyJoined = Boolean(eventData?.joined_by_me);
@@ -290,7 +319,7 @@ export function PurchaseInfoPage() {
             {alreadyJoined ? "Você já participa deste evento. Compra confirmada." : "Informações da compra"}
           </p>
 
-          <div className="checkinInfoCard">
+          <div className={`checkinInfoCard ${qrCode ? "withQr" : ""}`}>
             <dl className="checkinInfoList">
               <div>
                 <dt>Nome do Evento</dt>
@@ -322,7 +351,30 @@ export function PurchaseInfoPage() {
                 <dt>Regras obrigatórias ativas</dt>
                 <dd>{requiredRulesCount}</dd>
               </div>
+              {qrCode && (
+                <div>
+                  <dt>Expira em</dt>
+                  <dd>{new Date(qrCode.expires_at).toLocaleString()}</dd>
+                </div>
+              )}
+              {emailConfirmation && (
+                <div>
+                  <dt>Confirmação por email</dt>
+                  <dd>{emailConfirmation.simulated ? "Simulada" : "Enviada"}</dd>
+                </div>
+              )}
             </dl>
+            {qrCode && (
+              <aside className="purchaseQrPanel">
+                <p className="purchaseQrTitle">QR Code de Check-in</p>
+                {qrImageUrl ? (
+                  <img className="purchaseQrImage" src={qrImageUrl} alt={`QR Code do evento ${event.title}`} />
+                ) : (
+                  <div className="purchaseQrFallback">QR indisponível</div>
+                )}
+                <p className="purchaseQrMeta">{qrCode.single_use ? "Uso único" : "Múltiplos usos"}</p>
+              </aside>
+            )}
           </div>
 
           <div className="modalFooter">

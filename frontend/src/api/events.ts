@@ -39,6 +39,45 @@ export type PurchaseInput = {
   document?: string;
 };
 
+export type PurchaseResponse = {
+  membership: {
+    id: number;
+    user_id: number;
+    event_id: number;
+    role: "owner" | "participant";
+    created_at: string;
+    updated_at: string;
+  };
+  purchase: {
+    already_participant?: boolean;
+    ticket_type?: "full" | "half";
+    half_price_applied?: boolean;
+    price_multiplier?: number;
+    final_price?: number;
+    payment_method?: "pix" | "card" | "boleto" | string;
+    document_check?: {
+      required_document: string;
+      provided_document: string;
+    } | null;
+    capacity?: {
+      participants_count: number;
+      max_users: number;
+      remaining: number;
+    } | null;
+    qr_code?: {
+      token: string;
+      expires_at: string;
+      single_use: boolean;
+    } | null;
+    email_confirmation?: {
+      sent: boolean;
+      simulated?: boolean;
+      send_on: "purchase" | "checkin";
+      subject: string;
+    } | null;
+  };
+};
+
 type RecordUnknown = Record<string, unknown>;
 
 function isRecord(v: unknown): v is RecordUnknown {
@@ -131,8 +170,8 @@ export const eventsApi = {
     await request<unknown>(`${env.eventsPath}/${id}`, { method: "DELETE" });
   },
 
-  async purchase(id: number, input: PurchaseInput): Promise<void> {
-    await request<unknown>(`${env.eventsPath}/${id}/purchase`, {
+  async purchase(id: number, input: PurchaseInput): Promise<PurchaseResponse> {
+    return request<PurchaseResponse>(`${env.eventsPath}/${id}/purchase`, {
       method: "POST",
       body: input,
     });
