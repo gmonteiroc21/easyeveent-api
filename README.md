@@ -28,7 +28,13 @@ docker compose build
 docker compose up -d
 ```
 
-### 3) Serviços e portas
+## 3) Povoar Banco de Dados 
+```bash
+docker compose exec web bin/rails db:seed
+```
+- Todos usuários testes disponíveis em db/seeds.rb
+
+### 4) Serviços e portas
 
 - API Rails: `http://localhost:3000`
 - Frontend Vite: `http://localhost:5173`
