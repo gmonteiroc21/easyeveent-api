@@ -15,6 +15,11 @@ export type EventEntity = {
   banner?: string | null;
   status?: EventStatus | null;
   owned_by_me?: boolean;
+  joined_by_me?: boolean;
+  membership_role_by_me?: "owner" | "participant" | null;
+  participants_live_count?: number;
+  participants_live_count_visible?: boolean;
+  participants_live_count_refresh_seconds?: number;
   checkin_rules?: CheckinRuleEntity[];
 };
 
@@ -26,6 +31,12 @@ export type EventInput = {
   price: number | null;
   banner?: string | null;
   status?: EventStatus | null;
+};
+
+export type PurchaseInput = {
+  ticket_type: "full" | "half";
+  payment_method: "pix" | "card" | "boleto";
+  document?: string;
 };
 
 type RecordUnknown = Record<string, unknown>;
@@ -120,7 +131,16 @@ export const eventsApi = {
     await request<unknown>(`${env.eventsPath}/${id}`, { method: "DELETE" });
   },
 
-  async purchase(id: number): Promise<void> {
-    await request<unknown>(`${env.eventsPath}/${id}/purchase`, { method: "POST" });
+  async purchase(id: number, input: PurchaseInput): Promise<void> {
+    await request<unknown>(`${env.eventsPath}/${id}/purchase`, {
+      method: "POST",
+      body: input,
+    });
+  },
+
+  async cancelPurchase(id: number): Promise<void> {
+    await request<unknown>(`${env.eventsPath}/${id}/purchase`, {
+      method: "DELETE",
+    });
   },
 };

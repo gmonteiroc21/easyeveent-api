@@ -63,6 +63,20 @@ class EventsController < ApplicationController
     render json: { error: "validation_error", details: e.record.errors }, status: :unprocessable_entity
   end
 
+  def cancel_purchase
+    event = Event.find(params[:id])
+    authorize event, :cancel_purchase?
+
+    membership = event.user_events.find_by(user_id: current_user.id, role: :participant)
+    if membership.nil?
+      render json: { error: "validation_error", details: { base: ["Inscrição não encontrada para cancelamento."] } }, status: :unprocessable_entity
+      return
+    end
+
+    membership.destroy!
+    head :no_content
+  end
+
   private
 
   def serialize_event(event, include_checkin_confirmation: false)
@@ -72,6 +86,8 @@ class EventsController < ApplicationController
 
     payload = event.as_json.merge(
       "owned_by_me" => owned_by_current_user?(memberships),
+      "joined_by_me" => joined_by_current_user?(memberships),
+      "membership_role_by_me" => membership_role_by_current_user(memberships),
       "participants_live_count" => live_count[:participants_count],
       "participants_live_count_visible" => live_count[:visible],
       "participants_live_count_refresh_seconds" => live_count[:refresh_seconds],
@@ -87,6 +103,15 @@ class EventsController < ApplicationController
 
   def owned_by_current_user?(memberships)
     memberships.any? { |membership| membership.user_id == current_user.id && membership.owner? }
+  end
+
+  def joined_by_current_user?(memberships)
+    memberships.any? { |membership| membership.user_id == current_user.id }
+  end
+
+  def membership_role_by_current_user(memberships)
+    membership = memberships.find { |item| item.user_id == current_user.id }
+    membership&.role
   end
 
   def build_checkin_confirmation(event)

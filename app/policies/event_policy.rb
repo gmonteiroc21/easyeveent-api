@@ -23,6 +23,10 @@ class EventPolicy < ApplicationPolicy
     !owner?
   end
 
+  def cancel_purchase?
+    participant?
+  end
+
   class Scope < Scope
     def resolve
       # eventos em que o usuário tem vínculo (owner ou participant)
@@ -38,5 +42,9 @@ class EventPolicy < ApplicationPolicy
 
   def owner?
     record.user_events.exists?(user_id: user.id, role: UserEvent.roles[:owner])
+  end
+
+  def participant?
+    record.user_events.exists?(user_id: user.id, role: UserEvent.roles[:participant])
   end
 end

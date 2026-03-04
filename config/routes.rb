@@ -6,6 +6,7 @@ Rails.application.routes.draw do
 
   resources :events do
     post :purchase, on: :member
+    delete :purchase, on: :member, action: :cancel_purchase
 
     resources :participants, controller: "participants", only: [:index, :create, :update, :destroy] do
       post :transfer, on: :member
