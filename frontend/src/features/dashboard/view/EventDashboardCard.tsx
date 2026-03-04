@@ -73,6 +73,12 @@ export function EventDashboardCard({ event }: EventDashboardCardProps) {
             <dt>Preço</dt>
             <dd>{formatPrice(event.price)}</dd>
           </div>
+          {event.participants_live_count_visible && (
+            <div>
+              <dt>Inscritos</dt>
+              <dd>{event.participants_live_count ?? 0}</dd>
+            </div>
+          )}
         </dl>
 
         <div className="eventCardActions">

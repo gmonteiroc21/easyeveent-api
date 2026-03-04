@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
 import { DateRangePicker } from "../../components/DateRangePicker";
-import { ApiError } from "../../api/errors";
+import { ApiError, extractApiBaseErrorMessage } from "../../api/errors";
 import { eventsApi } from "../../api/events.ts";
 import type { EventEntity, EventInput } from "../../api/events.ts";
 import { EventDetailsModal } from "./EventDetailsModal";
@@ -39,6 +39,17 @@ function GearIcon() {
         strokeLinejoin="round"
       />
       <circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function UsersIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+      <path
+        d="M16 11a3 3 0 1 0-2.83-4h-.34A3 3 0 1 0 10 11h6zm-9 0a3 3 0 1 0 0-6a3 3 0 0 0 0 6zm9 2c-1.4 0-4.2.7-4.2 2.1V17h8.4v-1.9C20.2 13.7 17.4 13 16 13zM7 13c-1.66 0-5 .83-5 2.5V17h7v-1.5c0-.56.2-1.06.54-1.5C9.02 13.4 8.06 13 7 13z"
+        fill="currentColor"
+      />
     </svg>
   );
 }
@@ -89,11 +100,12 @@ export function EventsPage() {
 
   const createMut = useMutation({
     mutationFn: (input: EventInput) => eventsApi.create(input),
-    onSuccess: async () => {
-      setFlash({ type: "success", message: "Evento criado com sucesso." });
+    onSuccess: async (createdEvent) => {
+      setFlash({ type: "success", message: "Evento criado. Avance para opções avançadas." });
       setModalOpen(false);
       setEditing(null);
       await qc.invalidateQueries({ queryKey: ["events"] });
+      navigate(`/eventos/${createdEvent.id}/checkin`);
     },
     onError: (err) => handleApiError(err),
   });
@@ -123,7 +135,10 @@ export function EventsPage() {
     if (err instanceof ApiError) {
       if (err.status === 401) setFlash({ type: "error", message: "Sessão expirada. Faça login novamente." });
       else if (err.status === 403) setFlash({ type: "error", message: "Você não tem permissão para esta ação." });
-      else if (err.status === 422) setFlash({ type: "error", message: "Dados inválidos (422). Verifique o formulário." });
+      else if (err.status === 422) {
+        const detailMessage = extractApiBaseErrorMessage(err.payload);
+        setFlash({ type: "error", message: detailMessage || "Dados inválidos (422). Verifique o formulário." });
+      }
       else setFlash({ type: "error", message: `Erro na API (HTTP ${err.status}).` });
       return;
     }
@@ -222,7 +237,7 @@ export function EventsPage() {
       <header className="pageHeader">
         <div>
           <h2>Eventos</h2>
-          <p className="muted">CRUD + filtros</p>
+          <p className="muted">Gerencie seus eventos e suas inscrições</p>
         </div>
         <button className="btn primary" onClick={openCreate}>
           + Novo evento
@@ -307,7 +322,16 @@ export function EventsPage() {
                       <td>{e.price ?? "-"}</td>
                       <td className="actions">
                         <button className="btn" type="button" onClick={() => openDetails(e)}>
-                          Detalhes do Evento
+                          Detalhes
+                        </button>
+                        <button
+                          className="btn"
+                          type="button"
+                          onClick={() => navigate(`/participantes?eventId=${e.id}`)}
+                          aria-label="Participantes do evento"
+                          title="Participantes"
+                        >
+                          <UsersIcon />
                         </button>
                         <button
                           className="btn"
@@ -354,7 +378,7 @@ export function EventsPage() {
                       <td>{e.price ?? "-"}</td>
                       <td className="actions">
                         <button className="btn" type="button" onClick={() => openDetails(e)}>
-                          Detalhes do Evento
+                          Detalhes
                         </button>
                       </td>
                     </tr>
@@ -541,7 +565,7 @@ function submit(data: FormData) {
               Cancelar
             </button>
             <button type="submit" className="btn primary" disabled={busy}>
-              {busy ? "Salvando..." : "Salvar"}
+              {busy ? "Salvando..." : editing ? "Salvar" : "Avançar"}
             </button>
           </footer>
         </form>
