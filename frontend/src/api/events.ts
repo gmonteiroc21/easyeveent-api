@@ -15,6 +15,11 @@ export type EventEntity = {
   banner?: string | null;
   status?: EventStatus | null;
   owned_by_me?: boolean;
+  joined_by_me?: boolean;
+  membership_role_by_me?: "owner" | "participant" | null;
+  participants_live_count?: number;
+  participants_live_count_visible?: boolean;
+  participants_live_count_refresh_seconds?: number;
   checkin_rules?: CheckinRuleEntity[];
 };
 
@@ -26,6 +31,51 @@ export type EventInput = {
   price: number | null;
   banner?: string | null;
   status?: EventStatus | null;
+};
+
+export type PurchaseInput = {
+  ticket_type: "full" | "half";
+  payment_method: "pix" | "card" | "boleto";
+  document?: string;
+};
+
+export type PurchaseResponse = {
+  membership: {
+    id: number;
+    user_id: number;
+    event_id: number;
+    role: "owner" | "participant";
+    created_at: string;
+    updated_at: string;
+  };
+  purchase: {
+    already_participant?: boolean;
+    ticket_type?: "full" | "half";
+    half_price_applied?: boolean;
+    price_multiplier?: number;
+    final_price?: number;
+    payment_method?: "pix" | "card" | "boleto" | string;
+    document_check?: {
+      required_document: string;
+      provided_document: string;
+    } | null;
+    capacity?: {
+      participants_count: number;
+      max_users: number;
+      remaining: number;
+    } | null;
+    qr_code?: {
+      token: string;
+      expires_at: string;
+      single_use: boolean;
+    } | null;
+    email_confirmation?: {
+      sent: boolean;
+      simulated?: boolean;
+      send_on: "purchase" | "checkin";
+      subject: string;
+    } | null;
+  };
 };
 
 type RecordUnknown = Record<string, unknown>;
@@ -120,7 +170,16 @@ export const eventsApi = {
     await request<unknown>(`${env.eventsPath}/${id}`, { method: "DELETE" });
   },
 
-  async purchase(id: number): Promise<void> {
-    await request<unknown>(`${env.eventsPath}/${id}/purchase`, { method: "POST" });
+  async purchase(id: number, input: PurchaseInput): Promise<PurchaseResponse> {
+    return request<PurchaseResponse>(`${env.eventsPath}/${id}/purchase`, {
+      method: "POST",
+      body: input,
+    });
+  },
+
+  async cancelPurchase(id: number): Promise<void> {
+    await request<unknown>(`${env.eventsPath}/${id}/purchase`, {
+      method: "DELETE",
+    });
   },
 };

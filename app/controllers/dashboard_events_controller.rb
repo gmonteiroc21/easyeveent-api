@@ -12,13 +12,31 @@ class DashboardEventsController < ApplicationController
   private
 
   def serialize_event(event, include_rules: false)
-    payload = event.as_json.merge("owned_by_me" => owned_by_current_user?(event))
+    live_count = CheckinRules::Rules::LiveCountService.new(event: event).call
+
+    payload = event.as_json.merge(
+      "owned_by_me" => owned_by_current_user?(event),
+      "joined_by_me" => joined_by_current_user?(event),
+      "membership_role_by_me" => membership_role_by_current_user(event),
+      "participants_live_count" => live_count[:participants_count],
+      "participants_live_count_visible" => live_count[:visible],
+      "participants_live_count_refresh_seconds" => live_count[:refresh_seconds]
+    )
     payload["checkin_rules"] = serialize_rules(event) if include_rules
     payload
   end
 
   def owned_by_current_user?(event)
     event.user_events.any? { |membership| membership.user_id == current_user.id && membership.owner? }
+  end
+
+  def joined_by_current_user?(event)
+    event.user_events.any? { |membership| membership.user_id == current_user.id }
+  end
+
+  def membership_role_by_current_user(event)
+    membership = event.user_events.find { |user_event| user_event.user_id == current_user.id }
+    membership&.role
   end
 
   def serialize_rules(event)

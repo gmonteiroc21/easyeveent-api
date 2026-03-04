@@ -49,7 +49,7 @@ module CheckinRules
       end
 
       name = attrs[:name].to_s.strip
-      errors << "Regra ##{index + 1}: name é obrigatório." if name.blank?
+      name = type if name.blank?
 
       before = to_non_negative_integer(attrs[:window_before_minutes], "window_before_minutes", index, errors)
       after = to_non_negative_integer(attrs[:window_after_minutes], "window_after_minutes", index, errors)

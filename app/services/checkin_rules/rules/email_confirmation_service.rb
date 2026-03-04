@@ -18,17 +18,12 @@ module CheckinRules
         subject = config_value("subject").to_s.strip
         subject = "Confirmação de compra - #{@event.title}" if subject.blank?
 
-        PurchaseMailer.confirmation(
-          user: @user,
-          event: @event,
-          membership: @membership,
-          subject: subject,
-          ticket_type: @ticket_type,
-          payment_method: @payment_method,
-          price_multiplier: @price_multiplier
-        ).deliver_now
+        Rails.logger.info(
+          "[email_confirmation_simulated] event_id=#{@event.id} user_id=#{@user.id} membership_id=#{@membership.id} " \
+          "ticket_type=#{@ticket_type} payment_method=#{@payment_method} subject=#{subject.inspect}"
+        )
 
-        { sent: true, send_on: "purchase", subject: subject }
+        { sent: true, simulated: true, send_on: "purchase", subject: subject }
       end
 
       private
