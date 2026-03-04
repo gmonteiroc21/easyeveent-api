@@ -40,6 +40,7 @@ ActiveRecord::Base.transaction do
 
   puts "Criando evento..."
   event = Event.create!(
+    title: "EasyEvent Demo",
     starts_at: 10.days.from_now.change(hour: 19, min: 0),
     location: "Recife - PE",
     price: 0,

@@ -2,9 +2,10 @@ require "test_helper"
 
 class AuthenticationTest < ActionDispatch::IntegrationTest
   test "login returns token with valid credentials" do
-    user = create_user(email: "owner@example.com", login: "owner")
+    suffix = unique_suffix
+    user = create_user(email: "owner-#{suffix}@example.com", login: "owner_#{suffix}")
 
-    post "/auth/login", params: { identifier: "owner@example.com", password: "password123" }, as: :json
+    post "/auth/login", params: { identifier: user.email, password: "password123" }, as: :json
 
     assert_response :success
     body = JSON.parse(response.body)
@@ -13,9 +14,10 @@ class AuthenticationTest < ActionDispatch::IntegrationTest
   end
 
   test "login returns unauthorized for invalid credentials" do
-    create_user(email: "owner@example.com", login: "owner")
+    suffix = unique_suffix
+    user = create_user(email: "owner-#{suffix}@example.com", login: "owner_#{suffix}")
 
-    post "/auth/login", params: { identifier: "owner@example.com", password: "wrong-password" }, as: :json
+    post "/auth/login", params: { identifier: user.email, password: "wrong-password" }, as: :json
 
     assert_response :unauthorized
     body = JSON.parse(response.body)
