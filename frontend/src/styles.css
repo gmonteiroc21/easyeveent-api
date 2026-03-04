@@ -448,7 +448,7 @@ select {
 
 .checkinRuleMainFields {
   display: grid;
-  grid-template-columns: minmax(260px, 1.8fr) repeat(2, minmax(130px, 0.8fr)) auto auto;
+  grid-template-columns: minmax(260px, 1.8fr) auto auto;
   gap: 10px;
   align-items: end;
 }

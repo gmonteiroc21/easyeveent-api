@@ -2,7 +2,7 @@ import { useMemo, useReducer } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { ApiError } from "../../api/errors";
+import { ApiError, extractApiBaseErrorMessage } from "../../api/errors";
 import { checkinRulesApi, type CheckinRuleEntity, type CheckinRuleInput } from "../../api/checkinRules";
 import { eventsApi } from "../../api/events";
 
@@ -20,6 +20,10 @@ const RULE_TYPE_OPTIONS = [
 
 type RuleType = (typeof RULE_TYPE_OPTIONS)[number];
 type Flash = { type: "success" | "error"; message: string } | null;
+const FIXED_STANDARD_RULE_TYPES: RuleType[] = ["qr_code", "printed_list", "email_confirmation"];
+const ADVANCED_RULE_TYPE_OPTIONS: RuleType[] = ["capacity_limit", "live_count", "half_price_policy", "document_check"];
+const FIXED_RULE_TYPES: RuleType[] = [...FIXED_STANDARD_RULE_TYPES];
+const NEW_RULE_TYPE_OPTIONS = ADVANCED_RULE_TYPE_OPTIONS;
 
 const RULE_TYPE_LABEL: Record<RuleType, string> = {
   time_window: "Janela de tempo",
@@ -155,7 +159,7 @@ function ensureRuleConfig(ruleType: RuleType, current?: Record<string, unknown>)
 }
 
 function normalizeRule(rule: DraftRule): DraftRule {
-  const type = RULE_TYPE_OPTIONS.includes(rule.rule_type as RuleType) ? (rule.rule_type as RuleType) : "time_window";
+  const type = RULE_TYPE_OPTIONS.includes(rule.rule_type as RuleType) ? (rule.rule_type as RuleType) : "capacity_limit";
   return {
     ...rule,
     rule_type: type,
@@ -165,17 +169,46 @@ function normalizeRule(rule: DraftRule): DraftRule {
   };
 }
 
+function ensureFixedRules(rules: DraftRule[]) {
+  const next = [...rules];
+  let nextId = Math.min(0, ...next.map((rule) => rule.id)) - 1;
+
+  FIXED_STANDARD_RULE_TYPES.forEach((ruleType) => {
+    const exists = next.some((rule) => rule.rule_type === ruleType);
+    if (exists) return;
+
+    next.push(
+      normalizeRule({
+        id: nextId,
+        rule_type: ruleType,
+        name: RULE_TYPE_LABEL[ruleType],
+        window_before_minutes: 0,
+        window_after_minutes: 0,
+        is_required: false,
+        is_active: false,
+        sort_order: next.length + 1,
+        config: ensureRuleConfig(ruleType),
+        collapsed: false,
+      })
+    );
+    nextId -= 1;
+  });
+
+  return normalizeSortOrder(next);
+}
+
 function rulesReducer(state: RulesState, action: RulesAction): RulesState {
   switch (action.type) {
     case "LOAD_FROM_SERVER": {
-      const normalized = normalizeSortOrder(action.payload.map(normalizeRule));
+      const normalized = ensureFixedRules(action.payload.map(normalizeRule));
       return { serverRules: cloneRules(normalized), draftRules: cloneRules(normalized), dirty: false };
     }
     case "RESET":
       return { ...state, draftRules: cloneRules(state.serverRules), dirty: false };
     case "ADD_RULE": {
+      if (NEW_RULE_TYPE_OPTIONS.length === 0) return state;
       const nextId = Math.min(0, ...state.draftRules.map((rule) => rule.id)) - 1;
-      const type: RuleType = "time_window";
+      const type = NEW_RULE_TYPE_OPTIONS[0] as RuleType;
       const next = [
         ...state.draftRules,
         {
@@ -194,6 +227,10 @@ function rulesReducer(state: RulesState, action: RulesAction): RulesState {
       return { ...state, draftRules: normalizeSortOrder(next), dirty: true };
     }
     case "REMOVE_RULE": {
+      const target = state.draftRules.find((rule) => rule.id === action.id);
+      if (target && FIXED_RULE_TYPES.includes(target.rule_type as RuleType)) {
+        return state;
+      }
       const next = state.draftRules.filter((rule) => rule.id !== action.id);
       return { ...state, draftRules: normalizeSortOrder(next), dirty: true };
     }
@@ -319,7 +356,6 @@ function buildValidationErrors(rules: DraftRule[]) {
     if (!rule.rule_type || !RULE_TYPE_OPTIONS.includes(rule.rule_type as RuleType)) {
       errors.push(`Regra ${index + 1}: tipo de regra inválido.`);
     }
-    if (!rule.name.trim()) errors.push(`Regra ${index + 1}: nome é obrigatório.`);
     if (rule.window_before_minutes < 0) errors.push(`Regra ${index + 1}: janela antes não pode ser negativa.`);
     if (rule.window_after_minutes < 0) errors.push(`Regra ${index + 1}: janela depois não pode ser negativa.`);
     parseRuleConfig(rule, index, errors);
@@ -418,7 +454,10 @@ export function CheckinRulesPage() {
         return;
       }
       if (err instanceof ApiError && err.status === 422) {
-        setFlash({ type: "error", message: "Configuração inválida das regras (422)." });
+        setFlash({
+          type: "error",
+          message: extractApiBaseErrorMessage(err.payload) || "Configuração inválida das regras (422).",
+        });
         return;
       }
       if (err instanceof Error) {
@@ -434,6 +473,180 @@ export function CheckinRulesPage() {
   const canSave = canEdit && state.dirty && validationErrors.length === 0 && !saveMut.isPending;
   const rulesForbidden = rulesQuery.error instanceof ApiError && rulesQuery.error.status === 403;
   const saveForbidden = saveMut.error instanceof ApiError && saveMut.error.status === 403;
+  const standardRules = state.draftRules.filter((rule) => FIXED_STANDARD_RULE_TYPES.includes(rule.rule_type as RuleType));
+  const customRules = state.draftRules.filter((rule) => !FIXED_RULE_TYPES.includes(rule.rule_type as RuleType));
+
+  function renderRuleItem(rule: DraftRule) {
+    const fields = RULE_CONFIG_SCHEMA[rule.rule_type as RuleType] ?? [];
+    const isFixedRule = FIXED_RULE_TYPES.includes(rule.rule_type as RuleType);
+
+    return (
+      <article key={rule.id} className="checkinRuleItem">
+        <div className="checkinRuleTop">
+          <div className="checkinRuleSummary">
+            <span className="checkinRuleOrder">#{rule.sort_order}</span>
+            <strong>{RULE_TYPE_LABEL[rule.rule_type as RuleType]}</strong>
+            <span className="muted">{rule.rule_type}</span>
+          </div>
+          <button type="button" className="btn" onClick={() => dispatch({ type: "TOGGLE_COLLAPSE", id: rule.id })}>
+            {rule.collapsed ? "Expandir" : "Recolher"}
+          </button>
+        </div>
+
+        {!rule.collapsed && (
+          <>
+            <div className="checkinRuleMainFields">
+              <label>
+                Tipo
+                <select
+                  className="ruleTypeSelect"
+                  value={rule.rule_type}
+                  disabled={!canEdit || isFixedRule}
+                  onChange={(event) =>
+                    dispatch({
+                      type: "UPDATE_RULE",
+                      id: rule.id,
+                      field: "rule_type",
+                      value: event.target.value,
+                    })
+                  }
+                >
+                  {(isFixedRule
+                    ? [rule.rule_type as RuleType]
+                    : NEW_RULE_TYPE_OPTIONS.includes(rule.rule_type as RuleType)
+                      ? NEW_RULE_TYPE_OPTIONS
+                      : ([rule.rule_type as RuleType, ...NEW_RULE_TYPE_OPTIONS] as RuleType[])
+                  ).map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="checkboxLabel">
+                <input
+                  type="checkbox"
+                  checked={rule.is_required}
+                  disabled={!canEdit}
+                  onChange={(event) =>
+                    dispatch({
+                      type: "UPDATE_RULE",
+                      id: rule.id,
+                      field: "is_required",
+                      value: event.target.checked,
+                    })
+                  }
+                />
+                Obrigatória
+              </label>
+
+              <label className="checkboxLabel">
+                <input
+                  type="checkbox"
+                  checked={rule.is_active}
+                  disabled={!canEdit}
+                  onChange={() => dispatch({ type: "TOGGLE_ACTIVE", id: rule.id })}
+                />
+                Ativa
+              </label>
+            </div>
+
+            {fields.length > 0 && (
+              <div className="checkinRuleConfigRows">
+                {fields.map((field, fieldIndex) => {
+                  const rawValue = rule.config?.[field.key];
+                  const textValue = typeof rawValue === "string" || typeof rawValue === "number" ? String(rawValue) : "";
+                  const checkedValue = Boolean(rawValue);
+
+                  return (
+                    <div key={`${rule.id}-${field.key}`} className="checkinRuleConfigRow">
+                      <div className="configKeyLabel">{field.label}</div>
+
+                      {field.input === "select" ? (
+                        <select
+                          className="configValueInput"
+                          value={textValue || field.options?.[0]?.value || ""}
+                          disabled={!canEdit}
+                          autoFocus={canEdit && fieldIndex === 0}
+                          onChange={(event) =>
+                            dispatch({
+                              type: "UPDATE_CONFIG_VALUE",
+                              id: rule.id,
+                              key: field.key,
+                              value: event.target.value,
+                            })
+                          }
+                        >
+                          {(field.options || []).map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : field.input === "checkbox" ? (
+                        <label className="checkboxLabel configCheckbox configValueInput">
+                          <input
+                            type="checkbox"
+                            checked={checkedValue}
+                            autoFocus={canEdit && fieldIndex === 0}
+                            disabled={!canEdit}
+                            onChange={(event) =>
+                              dispatch({
+                                type: "UPDATE_CONFIG_VALUE",
+                                id: rule.id,
+                                key: field.key,
+                                value: event.target.checked,
+                              })
+                            }
+                          />
+                          Ativar
+                        </label>
+                      ) : (
+                        <input
+                          className="configValueInput"
+                          type={field.input === "number" ? "number" : "text"}
+                          value={textValue}
+                          min={field.min}
+                          max={field.max}
+                          step={field.step}
+                          autoFocus={canEdit && fieldIndex === 0}
+                          placeholder={field.placeholder}
+                          disabled={!canEdit}
+                          onChange={(event) =>
+                            dispatch({
+                              type: "UPDATE_CONFIG_VALUE",
+                              id: rule.id,
+                              key: field.key,
+                              value: event.target.value,
+                            })
+                          }
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {canEdit && !isFixedRule && (
+              <div className="checkinRuleActions">
+                <button type="button" className="btn" onClick={() => dispatch({ type: "REORDER", id: rule.id, direction: "up" })}>
+                  Subir
+                </button>
+                <button type="button" className="btn" onClick={() => dispatch({ type: "REORDER", id: rule.id, direction: "down" })}>
+                  Descer
+                </button>
+                <button type="button" className="btn danger" onClick={() => dispatch({ type: "REMOVE_RULE", id: rule.id })}>
+                  Remover
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </article>
+    );
+  }
 
   if (!Number.isFinite(numericEventId) || numericEventId <= 0) {
     return <p className="muted">Evento inválido.</p>;
@@ -479,219 +692,29 @@ export function CheckinRulesPage() {
       {!rulesQuery.isLoading && !rulesQuery.isError && (
         <div className="checkinRulesCard">
           <div className="checkinRulesHeader">
-            <strong>Configuração das regras</strong>
-            {canEdit && (
+            <strong>Regras do Evento</strong>
+          </div>
+{canEdit && NEW_RULE_TYPE_OPTIONS.length > 0 && (
+            <div className="checkinRulesHeader">
+              <span className="muted">Crie regras avançadas para validações adicionais.</span>
               <button type="button" className="btn" onClick={() => dispatch({ type: "ADD_RULE" })}>
                 + Regra
               </button>
-            )}
-          </div>
-
+            </div>
+          )}
+          <h3>Confirmação de check-in</h3>
           <div className="checkinRulesList">
-            {state.draftRules.map((rule, index) => {
-              const fields = RULE_CONFIG_SCHEMA[rule.rule_type as RuleType] ?? [];
-
-              return (
-                <article key={rule.id} className="checkinRuleItem">
-                  <div className="checkinRuleTop">
-                    <div className="checkinRuleSummary">
-                      <span className="checkinRuleOrder">#{index + 1}</span>
-                      <strong>{RULE_TYPE_LABEL[rule.rule_type as RuleType]}</strong>
-                      <span className="muted">{rule.rule_type}</span>
-                    </div>
-                    <button type="button" className="btn" onClick={() => dispatch({ type: "TOGGLE_COLLAPSE", id: rule.id })}>
-                      {rule.collapsed ? "Expandir" : "Recolher"}
-                    </button>
-                  </div>
-
-                  {!rule.collapsed && (
-                    <>
-                      <div className="checkinRuleMainFields">
-                        <label>
-                          Tipo
-                          <select
-                            className="ruleTypeSelect"
-                            value={rule.rule_type}
-                            disabled={!canEdit}
-                            onChange={(event) =>
-                              dispatch({
-                                type: "UPDATE_RULE",
-                                id: rule.id,
-                                field: "rule_type",
-                                value: event.target.value,
-                              })
-                            }
-                          >
-                            {RULE_TYPE_OPTIONS.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-
-                        <label>
-                          Janela antes (min)
-                          <input
-                            className="windowInput"
-                            type="number"
-                            min={0}
-                            value={rule.window_before_minutes}
-                            disabled={!canEdit}
-                            onChange={(event) =>
-                              dispatch({
-                                type: "UPDATE_RULE",
-                                id: rule.id,
-                                field: "window_before_minutes",
-                                value: Number(event.target.value || 0),
-                              })
-                            }
-                          />
-                        </label>
-
-                        <label>
-                          Janela depois (min)
-                          <input
-                            className="windowInput"
-                            type="number"
-                            min={0}
-                            value={rule.window_after_minutes}
-                            disabled={!canEdit}
-                            onChange={(event) =>
-                              dispatch({
-                                type: "UPDATE_RULE",
-                                id: rule.id,
-                                field: "window_after_minutes",
-                                value: Number(event.target.value || 0),
-                              })
-                            }
-                          />
-                        </label>
-
-                        <label className="checkboxLabel">
-                          <input
-                            type="checkbox"
-                            checked={rule.is_required}
-                            disabled={!canEdit}
-                            onChange={(event) =>
-                              dispatch({
-                                type: "UPDATE_RULE",
-                                id: rule.id,
-                                field: "is_required",
-                                value: event.target.checked,
-                              })
-                            }
-                          />
-                          Obrigatória
-                        </label>
-
-                        <label className="checkboxLabel">
-                          <input
-                            type="checkbox"
-                            checked={rule.is_active}
-                            disabled={!canEdit}
-                            onChange={() => dispatch({ type: "TOGGLE_ACTIVE", id: rule.id })}
-                          />
-                          Ativa
-                        </label>
-                      </div>
-
-                      {fields.length > 0 && (
-                        <div className="checkinRuleConfigRows">
-                          {fields.map((field, fieldIndex) => {
-                            const rawValue = rule.config?.[field.key];
-                            const textValue = typeof rawValue === "string" || typeof rawValue === "number" ? String(rawValue) : "";
-                            const checkedValue = Boolean(rawValue);
-
-                            return (
-                              <div key={`${rule.id}-${field.key}`} className="checkinRuleConfigRow">
-                                <div className="configKeyLabel">{field.label}</div>
-
-                                {field.input === "select" ? (
-                                  <select
-                                    className="configValueInput"
-                                    value={textValue || field.options?.[0]?.value || ""}
-                                    disabled={!canEdit}
-                                    autoFocus={canEdit && fieldIndex === 0}
-                                    onChange={(event) =>
-                                      dispatch({
-                                        type: "UPDATE_CONFIG_VALUE",
-                                        id: rule.id,
-                                        key: field.key,
-                                        value: event.target.value,
-                                      })
-                                    }
-                                  >
-                                    {(field.options || []).map((option) => (
-                                      <option key={option.value} value={option.value}>
-                                        {option.label}
-                                      </option>
-                                    ))}
-                                  </select>
-                                ) : field.input === "checkbox" ? (
-                                  <label className="checkboxLabel configCheckbox configValueInput">
-                                    <input
-                                      type="checkbox"
-                                      checked={checkedValue}
-                                      autoFocus={canEdit && fieldIndex === 0}
-                                      disabled={!canEdit}
-                                      onChange={(event) =>
-                                        dispatch({
-                                          type: "UPDATE_CONFIG_VALUE",
-                                          id: rule.id,
-                                          key: field.key,
-                                          value: event.target.checked,
-                                        })
-                                      }
-                                    />
-                                    Ativar
-                                  </label>
-                                ) : (
-                                  <input
-                                    className="configValueInput"
-                                    type={field.input === "number" ? "number" : "text"}
-                                    value={textValue}
-                                    min={field.min}
-                                    max={field.max}
-                                    step={field.step}
-                                    autoFocus={canEdit && fieldIndex === 0}
-                                    placeholder={field.placeholder}
-                                    disabled={!canEdit}
-                                    onChange={(event) =>
-                                      dispatch({
-                                        type: "UPDATE_CONFIG_VALUE",
-                                        id: rule.id,
-                                        key: field.key,
-                                        value: event.target.value,
-                                      })
-                                    }
-                                  />
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {canEdit && (
-                        <div className="checkinRuleActions">
-                          <button type="button" className="btn" onClick={() => dispatch({ type: "REORDER", id: rule.id, direction: "up" })}>
-                            Subir
-                          </button>
-                          <button type="button" className="btn" onClick={() => dispatch({ type: "REORDER", id: rule.id, direction: "down" })}>
-                            Descer
-                          </button>
-                          <button type="button" className="btn danger" onClick={() => dispatch({ type: "REMOVE_RULE", id: rule.id })}>
-                            Remover
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </article>
-              );
-            })}
+            {standardRules.map((rule) => renderRuleItem(rule))}
           </div>
+
+          {customRules.length > 0 && (
+            <>
+              <h3>Regras avançadas</h3>
+              <div className="checkinRulesList">
+                {customRules.map((rule) => renderRuleItem(rule))}
+              </div>
+            </>
+          )}
 
           {validationErrors.length > 0 && (
             <div className="alert">
