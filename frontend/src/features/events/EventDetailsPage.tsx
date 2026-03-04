@@ -54,6 +54,12 @@ export function EventDetailsPage() {
   }
 
   const event = eventQuery.data;
+  const activeRulesCount = event.checkin_rules?.filter((rule) => rule.is_active).length ?? 0;
+  const requiredRulesCount = event.checkin_rules?.filter((rule) => rule.is_active && rule.is_required).length ?? 0;
+  const rulesSummary =
+    activeRulesCount > 0
+      ? `${activeRulesCount} ativa(s), ${requiredRulesCount} obrigatória(s)`
+      : "Nenhuma regra ativa";
 
   return (
     <>
@@ -68,9 +74,10 @@ export function EventDetailsPage() {
 
       <EventDetailsModal
         event={event}
+        rulesSummary={rulesSummary}
         onClose={() => navigate(-1)}
         onSave={() => setFlash({ type: "success", message: "Evento salvo nos favoritos." })}
-        onBuy={() => navigate(`/eventos/${event.id}/compra?mode=form`)}
+        onBuy={() => navigate(`/events/${event.id}/purchase?mode=form`)}
         onEdit={() => navigate(`/eventos?editEventId=${event.id}`)}
         onDelete={() => {
           const ok = window.confirm("Tem certeza que deseja remover este evento?");

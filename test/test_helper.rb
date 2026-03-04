@@ -31,7 +31,7 @@ module TestDataHelper
   end
 
   def auth_headers_for(user)
-    token = JwtService.encode(sub: user.id)
+    token = JwtService.encode({ sub: user.id })
     { "Authorization" => "Bearer #{token}" }
   end
 end

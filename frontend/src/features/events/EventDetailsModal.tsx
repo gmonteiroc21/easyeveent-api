@@ -74,11 +74,12 @@ function VerticalDotsIcon() {
 
 type EventDetailsOverviewProps = {
   event: EventEntity;
+  rulesSummary?: string;
   onSave: () => void;
   onBuy: () => void;
 };
 
-function EventDetailsOverview({ event, onSave, onBuy }: EventDetailsOverviewProps) {
+function EventDetailsOverview({ event, rulesSummary, onSave, onBuy }: EventDetailsOverviewProps) {
   const isOwner = Boolean(event.owned_by_me);
 
   return (
@@ -106,6 +107,12 @@ function EventDetailsOverview({ event, onSave, onBuy }: EventDetailsOverviewProp
             <dt>Preço</dt>
             <dd>{formatPrice(event.price)}</dd>
           </div>
+          {rulesSummary && (
+            <div>
+              <dt>Regras</dt>
+              <dd>{rulesSummary}</dd>
+            </div>
+          )}
         </dl>
 
         {!isOwner && (
@@ -125,12 +132,13 @@ function EventDetailsOverview({ event, onSave, onBuy }: EventDetailsOverviewProp
 
 export function EventDetailsModal({
   event,
+  rulesSummary,
   onClose,
   onSave,
   onBuy,
   onEdit,
   onDelete,
-}: EventDetailsModalProps) {
+}: EventDetailsModalProps & { rulesSummary?: string }) {
   const bannerSrc = event.banner?.trim() || buildPlaceholderBanner(event.title);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const isOwner = Boolean(event.owned_by_me);
@@ -188,7 +196,7 @@ export function EventDetailsModal({
         </div>
 
         <div className="eventDetailsContent">
-          <EventDetailsOverview event={event} onSave={onSave} onBuy={onBuy} />
+          <EventDetailsOverview event={event} rulesSummary={rulesSummary} onSave={onSave} onBuy={onBuy} />
         </div>
       </div>
     </div>

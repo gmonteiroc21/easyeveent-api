@@ -10,21 +10,24 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_02_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_03_153000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "checkin_rules", force: :cascade do |t|
+    t.jsonb "config", default: {}, null: false
     t.datetime "created_at", null: false
     t.bigint "event_id", null: false
     t.boolean "is_active", default: true, null: false
     t.boolean "is_required", default: false, null: false
     t.string "name", null: false
+    t.string "rule_type", default: "time_window", null: false
     t.integer "sort_order", default: 1, null: false
     t.datetime "updated_at", null: false
     t.integer "window_after_minutes", default: 0, null: false
     t.integer "window_before_minutes", default: 0, null: false
     t.index ["event_id", "is_active"], name: "index_checkin_rules_on_event_id_and_is_active"
+    t.index ["event_id", "rule_type"], name: "index_checkin_rules_on_event_id_and_rule_type"
     t.index ["event_id"], name: "index_checkin_rules_on_event_id"
   end
 

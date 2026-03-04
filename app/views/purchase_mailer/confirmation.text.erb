@@ -1,0 +1,10 @@
+Olá, <%= @user.name %>!
+
+Sua compra foi confirmada para o evento "<%= @event.title %>".
+
+Detalhes:
+- Evento: <%= @event.title %>
+- Tipo de ingresso: <%= @ticket_type %>
+- Forma de pagamento: <%= @payment_method.presence || "não informada" %>
+- Valor final: R$ <%= @final_price %>
+- Código da inscrição: <%= @membership.id %>

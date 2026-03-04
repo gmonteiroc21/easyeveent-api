@@ -1,0 +1,12 @@
+<h1>Compra confirmada</h1>
+
+<p>Olá, <strong><%= @user.name %></strong>!</p>
+<p>Sua compra foi confirmada para o evento "<strong><%= @event.title %></strong>".</p>
+
+<ul>
+  <li><strong>Evento:</strong> <%= @event.title %></li>
+  <li><strong>Tipo de ingresso:</strong> <%= @ticket_type %></li>
+  <li><strong>Forma de pagamento:</strong> <%= @payment_method.presence || "não informada" %></li>
+  <li><strong>Valor final:</strong> R$ <%= @final_price %></li>
+  <li><strong>Código da inscrição:</strong> <%= @membership.id %></li>
+</ul>

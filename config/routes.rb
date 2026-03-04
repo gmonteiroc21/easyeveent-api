@@ -5,10 +5,14 @@ Rails.application.routes.draw do
   get  "/dashboard/events/:id", to: "dashboard_events#show"
 
   resources :events do
+    post :purchase, on: :member
+
     resources :participants, controller: "participants", only: [:index, :create, :update, :destroy] do
       post :transfer, on: :member
     end
 
-    resources :checkin_rules, only: [:index, :show, :create, :update, :destroy]
+    resources :checkin_rules, only: [:index, :show, :create, :update, :destroy] do
+      put :sync, on: :collection
+    end
   end
 end

@@ -37,7 +37,16 @@ class UserEventPolicy < ApplicationPolicy
   private
 
   def owner_of_event?
-    event_id = record.is_a?(UserEvent) ? record.event_id : record
+    event_id =
+      case record
+      when UserEvent
+        record.event_id
+      when Event
+        record.id
+      else
+        record
+      end
+
     UserEvent.exists?(user_id: user.id, event_id: event_id, role: UserEvent.roles[:owner])
   end
 end

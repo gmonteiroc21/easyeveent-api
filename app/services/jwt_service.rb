@@ -16,7 +16,17 @@ class JwtService
 
     def decode(token)
       decoded, = JWT.decode(token, secret, true, { algorithm: ALGORITHM })
-      decoded.with_indifferent_access
+      normalized =
+        case decoded
+        when ActionController::Parameters
+          decoded.to_unsafe_h
+        when Hash
+          decoded
+        else
+          decoded.respond_to?(:to_h) ? decoded.to_h : {}
+        end
+
+      normalized.with_indifferent_access
     end
 
     private

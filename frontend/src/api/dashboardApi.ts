@@ -1,16 +1,6 @@
 import { env } from "./env";
 import { request } from "./httpClient";
-import type { EventEntity } from "./events";
-
-function isEventEntity(v: unknown): v is EventEntity {
-  if (typeof v !== "object" || v === null || Array.isArray(v)) return false;
-  const record = v as Record<string, unknown>;
-  return (
-    typeof record.id === "number" &&
-    typeof record.title === "string" &&
-    typeof record.starts_at === "string"
-  );
-}
+import { isEventEntity, type EventEntity } from "./events";
 
 export const dashboardApi = {
   async listShowcase(): Promise<EventEntity[]> {

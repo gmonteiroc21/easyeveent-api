@@ -21,6 +21,16 @@ class EventPolicyTest < ActiveSupport::TestCase
 
     assert policy.show?
     assert_not policy.update?
+    assert policy.purchase?
+  end
+
+  test "owner cannot purchase own event" do
+    owner = create_user
+    event = create_event(owner: owner)
+
+    policy = EventPolicy.new(owner, event)
+
+    assert_not policy.purchase?
   end
 
   test "scope returns only events with membership" do
