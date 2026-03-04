@@ -127,4 +127,78 @@ class CheckinRulesSyncTest < ActionDispatch::IntegrationTest
     assert_equal "validation_error", body["error"]
     assert_includes body.dig("details", "base"), "Pelo menos uma regra ativa é obrigatória."
   end
+
+  test "sync returns validation error when trying to remove a rule with checkins" do
+    owner = create_user
+    participant = create_user
+    event = create_event(owner: owner)
+    membership = UserEvent.create!(user: participant, event: event, role: :participant)
+
+    keep_rule = CheckinRule.create!(
+      event: event,
+      rule_type: "time_window",
+      name: "Janela",
+      window_before_minutes: 10,
+      window_after_minutes: 10,
+      is_required: true,
+      is_active: true,
+      sort_order: 1,
+      config: {}
+    )
+
+    blocked_rule = CheckinRule.create!(
+      event: event,
+      rule_type: "document_check",
+      name: "Documento",
+      window_before_minutes: 0,
+      window_after_minutes: 0,
+      is_required: false,
+      is_active: true,
+      sort_order: 2,
+      config: {}
+    )
+
+    Checkin.create!(user_event: membership, checkin_rule: blocked_rule, checked_in_at: Time.current)
+
+    put "/events/#{event.id}/checkin_rules/sync",
+      params: {
+        rules: [
+          {
+            id: keep_rule.id,
+            rule_type: "time_window",
+            name: "Janela",
+            window_before_minutes: 10,
+            window_after_minutes: 10,
+            is_required: true,
+            is_active: true,
+            sort_order: 1,
+            config: {}
+          }
+        ]
+      },
+      headers: auth_headers_for(owner),
+      as: :json
+
+    assert_response :unprocessable_entity
+    body = JSON.parse(response.body)
+    assert_equal "validation_error", body["error"]
+    assert CheckinRule.exists?(blocked_rule.id)
+  end
+
+  test "sync returns validation error for malformed rule payload item" do
+    owner = create_user
+    event = create_event(owner: owner)
+
+    put "/events/#{event.id}/checkin_rules/sync",
+      params: {
+        rules: ["invalid_item"]
+      },
+      headers: auth_headers_for(owner),
+      as: :json
+
+    assert_response :unprocessable_entity
+    body = JSON.parse(response.body)
+    assert_equal "validation_error", body["error"]
+    assert_includes body.dig("details", "base"), "Regra #1: payload inválido."
+  end
 end

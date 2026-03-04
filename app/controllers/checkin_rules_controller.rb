@@ -38,6 +38,8 @@ class CheckinRulesController < ApplicationController
 
     @rule.destroy!
     head :no_content
+  rescue ActiveRecord::RecordNotDestroyed => e
+    render json: { error: "validation_error", details: e.record.errors }, status: :unprocessable_entity
   end
 
   def sync
@@ -52,6 +54,8 @@ class CheckinRulesController < ApplicationController
   rescue CheckinRules::ConfigValidator::ValidationError => e
     render json: { error: "validation_error", details: e.details }, status: :unprocessable_entity
   rescue ActiveRecord::RecordInvalid => e
+    render json: { error: "validation_error", details: e.record.errors }, status: :unprocessable_entity
+  rescue ActiveRecord::RecordNotDestroyed => e
     render json: { error: "validation_error", details: e.record.errors }, status: :unprocessable_entity
   end
 
@@ -73,10 +77,23 @@ class CheckinRulesController < ApplicationController
 
   def sync_rules_params
     params.require(:rules).map do |item|
-      raw = item.is_a?(ActionController::Parameters) ? item : ActionController::Parameters.new(item.to_h)
-      raw.permit(
-        :id, :rule_type, :name, :window_before_minutes, :window_after_minutes, :is_required, :is_active, :sort_order, config: {}
-      ).to_h
+      raw =
+        case item
+        when ActionController::Parameters
+          item
+        when Hash
+          ActionController::Parameters.new(item)
+        else
+          item
+        end
+
+      if raw.is_a?(ActionController::Parameters)
+        raw.permit(
+          :id, :rule_type, :name, :window_before_minutes, :window_after_minutes, :is_required, :is_active, :sort_order, config: {}
+        ).to_h
+      else
+        raw
+      end
     end
   end
 end

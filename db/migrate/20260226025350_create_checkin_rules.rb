@@ -7,7 +7,7 @@ class CreateCheckinRules < ActiveRecord::Migration[8.1]
       t.integer :window_after_minutes, null: false, default: 0
       t.boolean :is_required, null: false, default: false
       t.boolean :is_active, null: false, default: true
-      t.integer :sort_order, null: false, default: true
+      t.integer :sort_order, null: false, default: 1
 
       t.timestamps
     end

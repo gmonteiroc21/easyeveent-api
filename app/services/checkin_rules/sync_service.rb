@@ -16,7 +16,7 @@ module CheckinRules
           raise ConfigValidator::ValidationError.new(base: ["IDs de regra inválidos no payload: #{unknown_ids.join(', ')}"])
         end
 
-        @event.checkin_rules.where.not(id: incoming_ids).destroy_all
+        @event.checkin_rules.where.not(id: incoming_ids).find_each(&:destroy!)
 
         normalized_rules.each_with_index do |rule, index|
           attrs = rule.except(:id).merge(sort_order: index + 1)

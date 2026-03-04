@@ -110,6 +110,11 @@ module CheckinRules
         if !expires.nil? && !(expires.is_a?(Integer) && expires.positive?)
           errors << "Regra ##{index + 1}: qr_code exige config.expires_in_minutes inteiro > 0."
         end
+      when "live_count"
+        refresh = config["refresh_seconds"] || config[:refresh_seconds]
+        unless refresh.is_a?(Integer) && refresh.positive?
+          errors << "Regra ##{index + 1}: live_count exige config.refresh_seconds inteiro > 0."
+        end
       when "printed_list"
         format = config["format"] || config[:format]
         if !format.nil? && !%w[csv pdf].include?(format.to_s)
@@ -119,6 +124,11 @@ module CheckinRules
         send_on = config["send_on"] || config[:send_on]
         if !send_on.nil? && !%w[purchase checkin].include?(send_on.to_s)
           errors << "Regra ##{index + 1}: email_confirmation exige config.send_on em purchase|checkin."
+        end
+      when "document_check"
+        required_document = config["required_document"] || config[:required_document]
+        if required_document.to_s.strip.blank?
+          errors << "Regra ##{index + 1}: document_check exige config.required_document."
         end
       end
     end
