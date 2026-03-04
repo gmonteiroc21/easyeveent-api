@@ -37,17 +37,19 @@ module CheckinRules
       end
 
       def generate_csv(participants)
-        lines = ["membership_id,user_id,name,email,login,joined_at"]
+        lines = csv_headers
 
         participants.each do |membership|
-          lines << [
+          row = [
             membership.id,
             membership.user_id,
             csv_escape(membership.user.name),
             csv_escape(membership.user.email),
             csv_escape(membership.user.login),
             membership.created_at.iso8601
-          ].join(",")
+          ]
+          row << csv_escape(membership.document) if include_document_column?
+          lines << row.join(",")
         end
 
         lines.join("\n")
@@ -64,6 +66,18 @@ module CheckinRules
       def csv_escape(value)
         escaped = value.to_s.gsub('"', '""')
         %("#{escaped}")
+      end
+
+      def csv_headers
+        headers = ["membership_id,user_id,name,email,login,joined_at"]
+        if include_document_column?
+          headers = ["membership_id,user_id,name,email,login,joined_at,document"]
+        end
+        headers
+      end
+
+      def include_document_column?
+        @include_document_column ||= @event.checkin_rules.active.exists?(rule_type: "document_check")
       end
     end
   end

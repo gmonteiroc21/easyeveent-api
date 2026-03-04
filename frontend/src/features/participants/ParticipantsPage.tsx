@@ -98,6 +98,34 @@ export function ParticipantsPage() {
     },
   });
 
+  const exportMut = useMutation({
+    mutationFn: async () => {
+      if (!selectedEvent) throw new Error("Evento não selecionado.");
+      return participantsApi.export(selectedEvent.id);
+    },
+    onSuccess: (payload) => {
+      const blob = new Blob([payload.content], {
+        type: payload.format === "csv" ? "text/csv;charset=utf-8" : "text/plain;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = payload.file_name;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setFlash({ type: "success", message: "Exportação gerada com sucesso." });
+    },
+    onError: (error) => {
+      if (error instanceof ApiError && error.status === 403) {
+        setFlash({ type: "error", message: "Sem permissão para exportar participantes." });
+        return;
+      }
+      setFlash({ type: "error", message: "Erro ao exportar participantes." });
+    },
+  });
+
   const compatibleDestinations = useMemo(() => {
     if (!selectedEvent) return [];
     return ownerEvents.filter((event) => event.id !== selectedEvent.id && sameRules(selectedEvent, event));
@@ -149,6 +177,17 @@ export function ParticipantsPage() {
                 ))}
               </select>
             </label>
+            <button
+              type="button"
+              className="btn"
+              disabled={exportMut.isPending || !selectedEvent}
+              onClick={() => {
+                setFlash(null);
+                void exportMut.mutateAsync();
+              }}
+            >
+              {exportMut.isPending ? "Exportando..." : "Exportar participantes"}
+            </button>
           </div>
 
           {participantsQuery.isLoading && <p>Carregando participantes...</p>}

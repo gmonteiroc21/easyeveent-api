@@ -5,7 +5,21 @@ class ParticipantsController < ApplicationController
     authorize @event, :index?, policy_class: UserEventPolicy
 
     participants = @event.user_events.participant.includes(:user).order(created_at: :asc)
-    render json: participants.as_json(include: { user: { only: [:id, :name, :email, :login] } })
+    render json: participants.as_json(only: [:id, :user_id, :event_id, :role, :document, :created_at, :updated_at], include: { user: { only: [:id, :name, :email, :login] } })
+  end
+
+  def export
+    authorize @event, :index?, policy_class: UserEventPolicy
+
+    printed_list_rule = @event.checkin_rules.active.find_by(rule_type: "printed_list")
+    result = CheckinRules::Rules::PrintedListService.new(event: @event, rule: printed_list_rule).call
+
+    render json: {
+      file_name: result[:file_name],
+      content: result[:content],
+      format: result[:format],
+      participants_count: result[:participants_count]
+    }
   end
 
   def create
@@ -56,7 +70,7 @@ class ParticipantsController < ApplicationController
       # remove do evento origem
       membership.destroy!
       # cria vínculo no destino (mesmo user)
-      UserEvent.create!(event: to_event, user: membership.user, role: :participant)
+      UserEvent.create!(event: to_event, user: membership.user, role: :participant, document: membership.document)
     end
 
     head :no_content

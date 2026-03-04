@@ -43,7 +43,12 @@ module EventPurchases
       ).call!
 
       membership = UserEvent.transaction do
-        UserEvent.create!(event: @event, user: @user, role: :participant)
+        UserEvent.create!(
+          event: @event,
+          user: @user,
+          role: :participant,
+          document: @purchase_input[:document].to_s.strip.presence
+        )
       end
 
       qr_code_data = CheckinRules::Rules::QrCodeService.new(

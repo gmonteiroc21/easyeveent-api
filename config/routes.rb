@@ -10,6 +10,7 @@ Rails.application.routes.draw do
 
     resources :participants, controller: "participants", only: [:index, :create, :update, :destroy] do
       post :transfer, on: :member
+      get :export, on: :collection
     end
 
     resources :checkin_rules, only: [:index, :show, :create, :update, :destroy] do
